@@ -8,6 +8,10 @@ signal particles_requested(at: Vector3, color: Color, count: int)
 signal trauma_requested(amount: float)
 signal defeated(enemy: Node3D)
 
+## Keep collision radius independent from presentation for forgiving hits.
+const MODEL_SCALE: float = 0.8
+const MODEL_HIT_HEIGHT: float = 2.25
+
 var kind: String = "walker"
 var health: float = 36.0
 var max_health: float = 36.0
@@ -78,6 +82,7 @@ func configure(enemy_kind: String, wave: int) -> void:
 			score_value = 100
 			radius = 0.43
 			_visual_scale = 1.0
+	_visual_scale *= MODEL_SCALE
 	health = max_health
 	_configured = true
 	_apply_configuration()
@@ -98,7 +103,7 @@ func _apply_configuration() -> void:
 	if collider != null:
 		var shape := CapsuleShape3D.new()
 		shape.radius = radius
-		shape.height = maxf(radius * 2.0, 1.6 * _visual_scale)
+		shape.height = maxf(radius * 2.0, MODEL_HIT_HEIGHT * _visual_scale)
 		collider.shape = shape
 		collider.position.y = shape.height * 0.5
 	visuals = get_node_or_null("Visuals") as ZombieVisuals
@@ -153,6 +158,7 @@ func _physics_process(delta: float) -> void:
 	visuals.animate(delta, _clock, speed, desired.length(), to_target, _windup, _flash)
 	if distance < radius + 0.55 and _contact_cooldown <= 0:
 		_contact_cooldown = 1.1
+		visuals.play_attack()
 		if target.has_method("take_damage"):
 			target.take_damage(contact_damage)
 
@@ -176,6 +182,7 @@ func _update_separation() -> void:
 func _begin_attack(attack_kind: String, duration: float) -> void:
 	if _windup > 0:
 		return
+	visuals.play_attack(duration)
 	_attack = attack_kind
 	_windup = duration
 	_windup_duration = duration
@@ -238,4 +245,6 @@ func _die() -> void:
 	set_physics_process(false)
 	particles_requested.emit(global_position + Vector3.UP * 0.65, Color("a3b879"), 16 if kind == "boss" else 7)
 	defeated.emit(self)
+	var death_duration: float = visuals.play_death()
+	await get_tree().create_timer(death_duration + 0.25, false).timeout
 	queue_free()

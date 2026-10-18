@@ -328,7 +328,7 @@ func _test_actor_isolation() -> void:
 	local_enemy.defeated.connect(func(_enemy: Node3D) -> void: defeats[0] += 1)
 	local_enemy.take_damage(18.0)
 	local_enemy.configure("walker", 2)
-	_check(local_enemy.health == local_enemy.max_health and not local_enemy.visuals.get_node("HealthBar").visible and is_equal_approx(local_enemy.visuals._health_fill.scale.x, 0.9), "reconfiguring same enemy type resets health presentation with health state")
+	_check(local_enemy.health == local_enemy.max_health and not local_enemy.visuals.get_node("GeneratedVisuals/HealthBar").visible and is_equal_approx(local_enemy.visuals._health_fill.scale.x, 0.9 * local_enemy._visual_scale), "reconfiguring same enemy type resets health presentation with health state")
 	var score_before: int = world.session.score
 	var kills_before: int = world.session.kills
 	var bullets_before: int = world.session.combat.get_node("Projectiles").get_child_count()
@@ -532,3 +532,4 @@ func _test_progression() -> void:
 	await _frames(2)
 	_check(world.mode == world.Mode.PLAYING and not paused and world.session.player.health == 100.0 and world.session.score == 0, "restart after death resets run")
 	print("Integration: all eight waves, upgrades, victory, death and restart checked")
+

@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/enemy.gd" id="1_enemy"]
 [ext_resource type="Script" path="res://scripts/actors/enemy_visuals.gd" id="2_visuals"]
+[ext_resource type="PackedScene" path="res://assets/models/zombie_blocky.glb" id="3_model"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_enemy"]
 resource_local_to_scene = true
@@ -20,3 +21,12 @@ shape = SubResource("CapsuleShape3D_enemy")
 
 [node name="Visuals" type="Node3D" parent="."]
 script = ExtResource("2_visuals")
+
+[node name="Body" type="Node3D" parent="Visuals"]
+
+[node name="ZombieModel" parent="Visuals/Body" instance=ExtResource("3_model")]
+rotation = Vector3(0, 3.1415927, 0)
+
+[node name="VariantDetails" type="Node3D" parent="Visuals/Body"]
+
+[node name="GeneratedVisuals" type="Node3D" parent="Visuals"]
