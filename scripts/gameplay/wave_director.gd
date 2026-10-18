@@ -13,6 +13,8 @@ var intermission: float = 0.0
 var wave_finished: bool = false
 var spawn_serial: int = 0
 var running: bool = false
+var map: Arena
+var boss_pending: bool = false
 var target: Node3D
 var count_enemies: Callable
 var rng := RandomNumberGenerator.new()
@@ -21,6 +23,7 @@ func _ready() -> void:
 	rng.randomize()
 
 func start() -> void:
+	boss_pending = false
 	wave = 0
 	spawn_serial = 0
 	intermission = 0.0
@@ -34,7 +37,8 @@ func start_next_wave() -> void:
 	spawn_clock = 1.6
 	wave_started.emit(wave)
 	if wave == 4 or wave == GameRules.WAVE_COUNT:
-		enemy_spawn_requested.emit("boss", Vector3(0, 0, -15), wave)
+		boss_pending = true
+		_try_spawn_boss()
 
 func _physics_process(delta: float) -> void:
 	if not running:
@@ -43,6 +47,8 @@ func _physics_process(delta: float) -> void:
 		intermission -= delta
 		if intermission <= 0.0:
 			start_next_wave()
+	elif boss_pending:
+		_try_spawn_boss()
 	elif spawn_left > 0:
 		spawn_clock -= delta
 		if spawn_clock <= 0.0 and int(count_enemies.call()) < 65:
@@ -62,25 +68,23 @@ func _emit_wave_cleared() -> void:
 		wave_cleared.emit()
 
 func spawn_next() -> void:
-	spawn_left -= 1
-	spawn_serial += 1
+	var next_serial: int = spawn_serial + 1
 	var kind: String = "walker"
-	if wave >= 2 and spawn_serial % 4 == 0:
+	if wave >= 2 and next_serial % 4 == 0:
 		kind = "runner"
-	if wave >= 3 and spawn_serial % 7 == 0:
+	if wave >= 3 and next_serial % 7 == 0:
 		kind = "spitter"
-	if wave >= 3 and spawn_serial % 9 == 0:
+	if wave >= 3 and next_serial % 9 == 0:
 		kind = "brute"
-	var edge: int = rng.randi_range(0, 3)
-	var p: Vector3 = Vector3.ZERO
-	for attempt in range(12):
-		var offset: float = rng.randf_range(-13, 13)
-		match edge:
-			0: p = Vector3(offset, 0, -16.2)
-			1: p = Vector3(16.2, 0, offset)
-			2: p = Vector3(offset, 0, 16.2)
-			3: p = Vector3(-16.2, 0, offset)
-		if p.distance_to(target.position) > 8.0:
-			break
-		edge = (edge + 1) % 4
-	enemy_spawn_requested.emit(kind, p, wave)
+	var point: Variant = map.choose_spawn(kind, wave, target.global_position, rng)
+	if point == null:
+		return
+	spawn_left -= 1
+	spawn_serial = next_serial
+	enemy_spawn_requested.emit(kind, point, wave)
+
+func _try_spawn_boss() -> void:
+	var point: Variant = map.choose_spawn("boss", wave, target.global_position, rng)
+	if point != null:
+		boss_pending = false
+		enemy_spawn_requested.emit("boss", point, wave)

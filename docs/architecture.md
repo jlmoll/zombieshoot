@@ -8,13 +8,11 @@ La escena principal compone los sistemas y coordina los estados de aplicación. 
 DeadShift (Game)
 ├── SaveData                  Récord y preferencias persistentes
 ├── Audio (GameAudio)         Banco de sonidos y voces reutilizables
-├── Arena                     Geometría estática, luces y obstáculos
-│   ├── Ground / Perimeter / Cover / Markings
-│   └── Navigation            Campo de direcciones compartido por la horda
 ├── CameraRig
 │   └── Camera                Seguimiento isométrico y sacudidas
 ├── SessionSlot
 │   └── RunSession            Una instancia nueva por partida
+│       ├── Arena             Mapa recreado al reiniciar, con geometría, entradas y navegación
 │       ├── Player
 │       │   ├── CollisionShape3D
 │       │   └── Visuals       Modelo y animación del superviviente
@@ -35,7 +33,7 @@ DeadShift (Game)
 └── AimCursor                Presentación del cursor según el estado
 ```
 
-Los nodos y widgets permanentes se declaran en `.tscn`. Las primitivas de los modelos y de la arena se generan por código dentro de sus nodos de presentación.
+Los nodos y widgets permanentes se declaran en `.tscn`. La geometría de la arena se guarda en la escena, con piezas reutilizables en `scenes/world/pieces/`. Los modelos de actores mantienen sus propios nodos de presentación.
 
 ## Responsabilidades y dependencias
 
@@ -49,7 +47,8 @@ Los nodos y widgets permanentes se declaran en `.tscn`. Las primitivas de los mo
 | `Survivor` / `Zombie` | Movimiento, reglas y estado de cada actor | Señales de combate, audio, partículas y sacudida |
 | `SurvivorVisuals` / `ZombieVisuals` | Meshes y animación | Datos del actor; nunca modifican sus reglas |
 | `PickupManager` / `SupplyPickup` | Crear, caducar, recoger y aplicar suministros | Objetivo inyectado y señal `collected` |
-| `Arena` / `HordeNavigation` | Geometría y navegación compartida | Rectángulos de obstáculos y objetivo de navegación |
+| `Arena` / `HordeNavigation` | Mapa editable y navegación compartida | Colisiones, área jugable y objetivo inyectado |
+| `SpawnZone` | Entradas editables de enemigos | Anchura, peso, oleada, tipos permitidos y distancia mínima |
 | `GameHUD` y sus vistas | Mostrar información e intenciones del jugador | Diccionarios de estadísticas y señales de menú |
 | `SaveData` | Leer y escribir récord y sonido | `user://dead_shift.cfg` |
 
@@ -61,9 +60,9 @@ Los grupos `player`, `enemies`, `projectiles` y `grenades` sirven para inspecci�
 
 - `Game` controla `SceneTree.paused`. Audio, cámara e interfaz siguen activos durante los menús.
 - `RunSession` es `PROCESS_MODE_PAUSABLE`: movimiento, oleadas, proyectiles, granadas, suministros y efectos se detienen juntos.
-- La navegación también es pausable, aunque pertenece a la arena persistente.
+- El mapa y su navegación pertenecen a la partida y también se pausan.
 - Reiniciar descarta el nodo `RunSession` completo. No se conservan listas de actores ni temporizadores del intento anterior.
-- Arena, audio, cámara, interfaz y guardado sobreviven al reinicio. La navegación y la cámara reciben el nuevo superviviente.
+- Audio, cámara, interfaz y guardado sobreviven al reinicio. El mapa se instancia de nuevo desde `Game.map_scene`; la navegación y la cámara reciben el nuevo superviviente.
 - Si se pausa entre el último tick de combate y la notificación diferida de fin de oleada, el director vuelve a comprobarla al continuar.
 
 ## Dónde ampliar el juego
@@ -77,7 +76,7 @@ Los grupos `player`, `enemies`, `projectiles` y `grenades` sirven para inspecci�
 - **Interfaz:** `scenes/ui/hud.tscn` y los scripts de `scripts/ui/`.
 - **Suministros:** `scenes/gameplay/supply_pickup.tscn` y su script.
 
-Instanciar jugadores, enemigos e interfaz desde sus escenas, porque sus scripts esperan hijos declarados. Mantener los cambios de geometría en `Arena` y su descripción de obstáculos juntos. Las coordenadas de la arena y sus contenedores de simulación comparten el origen de la escena principal.
+Instanciar jugadores, enemigos e interfaz desde sus escenas, porque sus scripts esperan hijos declarados. La navegación lee las colisiones estáticas de la escena, sin una segunda descripción manual de obstáculos. El mapa admite traslación y rotación sobre Y dentro del plano de juego. Consulta [edición de mapas](map_authoring.md).
 
 ## Validación
 

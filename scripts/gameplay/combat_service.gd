@@ -7,6 +7,7 @@ const GRENADE_SCRIPT = preload("res://scripts/grenade.gd")
 
 @onready var projectiles: Node3D = $Projectiles
 @onready var grenades: Node3D = $Grenades
+var playable_area: CollisionShape3D
 var enemies: EnemySpawner
 var effects: ImpactEffects
 var audio: GameAudio
@@ -33,6 +34,7 @@ func _spawn_bullet(origin: Vector3, direction: Vector3, damage: float, speed: fl
 func spawn_grenade(origin: Vector3, direction: Vector3, distance: float = 9.0) -> Grenade:
 	var grenade: Grenade = GRENADE_SCRIPT.new()
 	grenade.name = "Grenade"
+	grenade.playable_area = playable_area
 	grenade.configure(origin, direction, distance)
 	grenade.detonated.connect(detonate_grenade)
 	grenades.add_child(grenade, true)

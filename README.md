@@ -97,3 +97,8 @@ la pose base y los cuatro clips en `assets/models/qa_godot_*.png` para inspecci�
 La técnica industrial animada sustituye al prototipo. Incluye movimiento y apuntado
 independientes, tres armas, recarga al caminar y caída al morir. Consulta
 [fuentes, regeneración y validación visual](docs/player_technician.md).
+
+## Mapas editables
+
+La arena se construye desde `scenes/world/arena.tscn`, con piezas reutilizables,
+marcadores de aparición y límites configurables. Consulta la [guía de edición de mapas](docs/map_authoring.md).

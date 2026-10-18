@@ -108,6 +108,7 @@ func _run() -> void:
 	await _test_menu_focus()
 	await _test_lifecycle_and_player()
 	await _test_session_isolation()
+	await _test_map_authoring()
 	await _test_actor_isolation()
 	await _test_deferred_wave_pause()
 	await _test_projectile_physics()
@@ -286,7 +287,7 @@ func _test_session_isolation() -> void:
 	_check(not is_instance_valid(old_pickup) and not is_instance_valid(old_effect), "restart frees pickups and effects through session ownership")
 	_check(get_nodes_in_group("enemies").is_empty() and get_nodes_in_group("projectiles").is_empty() and get_nodes_in_group("grenades").is_empty(), "no previous-run combat nodes remain in scene groups")
 	_check(get_nodes_in_group("player").size() == 1 and get_nodes_in_group("player")[0] == world.session.player, "exactly one active survivor remains after restart")
-	_check(world.arena == arena and world.audio == audio and world.save_data == save_data, "restart preserves arena, audio and persistence services")
+	_check(world.arena != arena and world.arena.get_parent() == world.session and world.audio == audio and world.save_data == save_data, "restart replaces map and preserves audio and persistence services")
 	_check(save_data.best_score == best_before and save_data.muted == muted_before, "restart preserves record and saved mute preference")
 	_check(world.arena.navigation.target == world.session.player, "restart retargets shared navigation to new survivor")
 	print("Integration: semantic ownership, dependency injection, restart cleanup and persistence isolation checked")
@@ -533,3 +534,66 @@ func _test_progression() -> void:
 	_check(world.mode == world.Mode.PLAYING and not paused and world.session.player.health == 100.0 and world.session.score == 0, "restart after death resets run")
 	print("Integration: all eight waves, upgrades, victory, death and restart checked")
 
+
+
+func _test_map_authoring() -> void:
+	await _fresh_run()
+	var map: Arena = world.arena
+	var nav: HordeNavigation = map.navigation
+	var tiles := map.get_node("Ground/FloorTiles") as GridMap
+	_check(tiles != null and tiles.mesh_library != null, "floor is an editor-paintable GridMap with a MeshLibrary")
+	_check(tiles.get_used_cells().size() == 144 and map.get_node("Ground").get_child_count() == 2, "floor cells replace individual tile nodes")
+	_check(tiles.get_cell_item(Vector3i(-6, 0, -6)) == 0 and tiles.get_cell_item(Vector3i(-6, 0, -5)) == 1, "GridMap preserves the original checkerboard layout")
+
+	var cover := map.get_node("Cover/Cover") as Node3D
+	_check(cover.scene_file_path.ends_with("barricade.tscn"), "map cover is an editable reusable scene instance")
+	var old_center := cover.global_position
+	_check(not nav.is_walkable(old_center), "navigation derives blocked cells from authored cover")
+	cover.position = Vector3(4, 0.8, 4)
+	cover.rotation.y = PI / 4.0
+	map.rebuild_navigation()
+	_check(nav.is_walkable(old_center), "moving cover frees its previous navigation footprint")
+	_check(not nav.is_walkable(cover.global_position), "rotated cover blocks its new navigation footprint")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 42
+	for zone: SpawnZone in map.spawn_container.get_children():
+		zone.enabled = false
+	var entrance := map.spawn_container.get_node("North") as SpawnZone
+	entrance.enabled = true
+	entrance.width = 0
+	entrance.global_position = Vector3(4, 0, 0)
+	entrance.minimum_distance = 8
+	_check(map.choose_spawn("walker", 1, Vector3.ZERO, rng) == null, "spawn zones reject positions too close to survivor")
+	entrance.minimum_distance = 0
+	entrance.first_wave = 3
+	_check(map.choose_spawn("walker", 2, Vector3.ZERO, rng) == null, "spawn zones respect activation wave")
+	_check(map.choose_spawn("runner", 3, Vector3.ZERO, rng) == entrance.global_position, "spawn positions follow editor marker transforms")
+	_check(map.choose_spawn("boss", 3, Vector3.ZERO, rng) == null, "spawn zones filter enemy kinds")
+	var remaining: int = world.session.waves.spawn_left
+	entrance.enabled = false
+	world.session.waves.spawn_next()
+	_check(world.session.waves.spawn_left == remaining, "unavailable entrances do not discard scheduled enemies")
+	map.playable_area.shape = map.playable_area.shape.duplicate()
+	map.playable_area.shape.size = Vector3(50, 2, 50)
+	map.rebuild_navigation()
+	_check(nav.is_walkable(Vector3(22, 0, 0)), "playable bounds are read from the editable shape")
+	var grenade: Grenade = world.session.combat.spawn_grenade(Vector3(22, 2, 0), Vector3.RIGHT)
+	grenade.set_physics_process(false)
+	grenade.velocity = Vector3.ZERO
+	grenade._physics_process(0.001)
+	_check(grenade.global_position.x > 21.9, "grenades are not clamped to the old fixed arena size")
+	grenade.global_position = Vector3(26, 2, 0)
+	grenade.velocity = Vector3.RIGHT
+	grenade._physics_process(0.001)
+	_check(grenade.global_position.x < 25.0 and grenade.velocity.x < 0.0, "grenades bounce at the authored playable boundary")
+
+	map.position = Vector3(50, 0, 30)
+	map.rotation.y = PI / 4.0
+	world.session.player.global_position = map.player_spawn.global_position
+	map.rebuild_navigation()
+	_check(nav.is_walkable(map.player_spawn.global_position), "navigation supports translated and rotated map roots")
+	_check(not nav.is_walkable(cover.global_position), "collision footprints follow transformed map roots")
+	await _fresh_run()
+	_check(world.arena.get_node("Cover/Cover").position == Vector3(-7, 0.8, -6), "restart restores authored map geometry")
+	_check(world.session.player.global_position == world.arena.player_spawn.global_position, "survivor starts at map marker")
+	print("Integration: editable geometry, rotated collisions, map bounds, spawn filtering and map reset checked")

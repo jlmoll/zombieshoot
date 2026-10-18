@@ -6,7 +6,8 @@ enum Mode { TITLE, PLAYING, PAUSED, UPGRADES, DEAD, VICTORY }
 
 const RUN_SCENE: PackedScene = preload("res://scenes/gameplay/run_session.tscn")
 
-@onready var arena: Arena = $Arena
+@export var map_scene: PackedScene = preload("res://scenes/world/arena.tscn")
+var arena: Arena
 @onready var camera_rig: IsometricCameraRig = $CameraRig
 @onready var audio: GameAudio = $Audio
 @onready var save_data: SaveData = $SaveData
@@ -42,7 +43,9 @@ func _new_session() -> void:
 		session.queue_free()
 	session = RUN_SCENE.instantiate()
 	session_slot.add_child(session)
-	session.configure(arena.navigation, audio, camera_rig)
+	arena = map_scene.instantiate()
+	session.add_child(arena)
+	session.configure_map(arena, audio, camera_rig)
 	session.wave_started.connect(_on_wave_started)
 	session.wave_cleared.connect(_on_wave_cleared)
 	session.player.died.connect(_on_player_died)

@@ -3,7 +3,6 @@ extends RefCounted
 ## Shared tuning, independent of scene orchestration.
 
 const WAVE_COUNT: int = 8
-const ARENA_HALF_SIZE: float = 18.0
 const PLAYER_LAYER: int = 1
 const WALL_LAYER: int = 2
 const ENEMY_LAYER: int = 4

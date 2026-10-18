@@ -11,14 +11,13 @@
 [node name="DeadShift" type="Node3D"]
 process_mode = 3
 script = ExtResource("1")
+map_scene = ExtResource("2")
 
 [node name="SaveData" type="Node" parent="."]
 script = ExtResource("5")
 
 [node name="Audio" type="Node" parent="."]
 script = ExtResource("4")
-
-[node name="Arena" parent="." instance=ExtResource("2")]
 
 [node name="CameraRig" type="Node3D" parent="."]
 script = ExtResource("3")

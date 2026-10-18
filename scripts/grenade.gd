@@ -65,6 +65,8 @@ func _ready() -> void:
 	_update_ring()
 
 
+var playable_area: CollisionShape3D
+
 func _physics_process(delta: float) -> void:
 	if exploded:
 		return
@@ -73,12 +75,18 @@ func _physics_process(delta: float) -> void:
 	var collision: KinematicCollision3D = move_and_collide(velocity * delta)
 	if collision != null:
 		velocity = velocity.bounce(collision.get_normal()) * 0.45
-	# The low visual perimeter must contain grenades even at the top of the arc.
-	for axis in [0, 2]:
-		var limit: float = GameRules.ARENA_HALF_SIZE - 0.2
-		if absf(position[axis]) > limit:
-			position[axis] = clampf(position[axis], -limit, limit)
-			velocity[axis] = -signf(position[axis]) * absf(velocity[axis]) * 0.45
+	# Contain airborne grenades using the authored map bounds, above low walls too.
+	if is_instance_valid(playable_area):
+		var box := playable_area.shape as BoxShape3D
+		var local_point := playable_area.to_local(global_position)
+		var local_velocity := playable_area.global_basis.inverse() * velocity
+		for axis in [0, 2]:
+			var limit: float = maxf(0.0, box.size[axis] * 0.5 - 0.2)
+			if absf(local_point[axis]) > limit:
+				local_point[axis] = clampf(local_point[axis], -limit, limit)
+				local_velocity[axis] = -signf(local_point[axis]) * absf(local_velocity[axis]) * 0.45
+		global_position = playable_area.to_global(local_point)
+		velocity = playable_area.global_basis * local_velocity
 	if position.y < FLOOR_HEIGHT:
 		position.y = FLOOR_HEIGHT
 		velocity.y = -velocity.y * 0.25 if velocity.y < -1.2 else 0.0

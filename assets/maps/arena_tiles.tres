@@ -1,0 +1,33 @@
+[gd_resource type="MeshLibrary" format=3 uid="uid://ccelg8g0gj1q5"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tjriy"]
+albedo_color = Color(0.14901961, 0.22745098, 0.25882354, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="BoxMesh_8l4pw"]
+material = SubResource("StandardMaterial3D_tjriy")
+size = Vector3(2.96, 0.12, 2.96)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_eftgg"]
+albedo_color = Color(0.16470589, 0.24313726, 0.27058825, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="BoxMesh_oaw6v"]
+material = SubResource("StandardMaterial3D_eftgg")
+size = Vector3(2.96, 0.12, 2.96)
+
+[resource]
+item/0/name = "Suelo oscuro"
+item/0/mesh = SubResource("BoxMesh_8l4pw")
+item/0/mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+item/0/mesh_cast_shadow = 1
+item/0/shapes = []
+item/0/navigation_mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+item/0/navigation_layers = 1
+item/1/name = "Suelo claro"
+item/1/mesh = SubResource("BoxMesh_oaw6v")
+item/1/mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+item/1/mesh_cast_shadow = 1
+item/1/shapes = []
+item/1/navigation_mesh_transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+item/1/navigation_layers = 1
