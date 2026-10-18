@@ -28,6 +28,7 @@ var _wave: Label
 var _enemies: Label
 var _ammo: Label
 var _weapon: Label
+var _grenades: Label
 var _reload: ProgressBar
 var _dash: ProgressBar
 var _dash_label: Label
@@ -204,6 +205,9 @@ func _build_gameplay() -> void:
 	_objective = _label("ELIMINA LA HORDA", 13, AMBER)
 	_objective.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	middle.add_child(_objective)
+	_grenades = _label("GRANADAS  2 / 4  ·  G / CLIC DER. / B", 14, AMBER)
+	_grenades.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	middle.add_child(_grenades)
 	var hint := _label("ESPACIO · ESQUIVAR     Q · ARMA     ESC · PAUSA", 11, MUTED)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	middle.add_child(hint)
@@ -296,17 +300,17 @@ func show_title(best: int) -> void:
 	_sound_button = _button(_sound_text(), _toggle_sound)
 	left.add_child(_sound_button)
 	left.add_child(_label("RÉCORD DE CONTENCIÓN   %06d" % best, 14, MUTED))
-	var right := _column(_panel(row, Vector2(430, 0)), 14)
+	var right := _column(_panel(row, Vector2(430, 0)), 10)
 	right.add_child(_label("01 / SOBREVIVE A LA NOCHE", 19, CYAN))
 	var brief := _label("Ocho oleadas. Hordas crecientes.\nMejora tu equipo entre ataques y\nacaba con la amenaza del sector.", 17)
 	brief.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	right.add_child(brief)
 	right.add_child(HSeparator.new())
 	right.add_child(_label("TECLADO + RATÓN", 12, AMBER))
-	right.add_child(_label("WASD   Moverse\nRatón + clic izq.   Apuntar / disparar\nEspacio   Esquivar\nR   Recargar\nQ / 1–3 / rueda   Cambiar arma\nEsc / P   Pausa", 15, WHITE))
+	right.add_child(_label("WASD   Moverse\nRatón + clic izq.   Apuntar / disparar\nEspacio   Esquivar\nG / clic derecho   Granada (+2/oleada, máx. 4)\nR   Recargar\nQ / 1–3 / rueda   Cambiar arma\nEsc / P   Pausa", 15, WHITE))
 	right.add_child(HSeparator.new())
 	right.add_child(_label("MANDO · DOBLE STICK", 12, AMBER))
-	right.add_child(_label("Izq. mover · Der. apuntar y disparar\nRT / RB disparar · A / LB esquivar\nX recargar · Y arma · Start pausa", 14))
+	right.add_child(_label("Izq. mover · Der. apuntar y disparar\nRT / RB disparar · A / LB esquivar\nB granada · X recargar · Y arma · Start pausa", 14))
 	play.call_deferred("grab_focus")
 
 
@@ -413,6 +417,9 @@ func update_stats(data: Dictionary) -> void:
 	_ammo.add_theme_font_size_override("font_size", 20 if reloading else 26)
 	_ammo.modulate = AMBER if reloading or int(data.get("ammo", 0)) == 0 else WHITE
 	_weapon.text = str(data.get("weapon", "PISTOLA")).to_upper()
+	var grenades: int = int(data.get("grenades", 0))
+	_grenades.text = "GRANADAS  %d / %d  ·  G / CLIC DER. / B" % [grenades, int(data.get("max_grenades", 4))]
+	_grenades.modulate = AMBER if grenades > 0 else MUTED
 	_reload.value = clampf(float(data.get("reload_progress", 0)), 0, 1) if reloading else float(data.get("ammo", 0)) / maxf(1.0, float(data.get("magazine", 1)))
 	var ready: bool = bool(data.get("dash_ready", true))
 	_dash.value = 1.0 if ready else clampf(float(data.get("dash_progress", 0)), 0, 1)

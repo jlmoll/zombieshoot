@@ -106,6 +106,7 @@ func _run() -> void:
 	_check(world.mode == "title" and paused, "title pauses the simulation")
 	await _test_lifecycle_and_player()
 	await _test_projectile_physics()
+	await _test_grenades()
 	await _test_enemy_navigation_and_attacks()
 	await _test_progression()
 	await _finish()
@@ -312,6 +313,72 @@ func _test_enemy_navigation_and_attacks() -> void:
 	print("Integration: obstacle routing, telegraphs, ranged AI and boss patterns checked")
 
 
+func _test_grenades() -> void:
+	await _fresh_run()
+	var player: Node3D = world.player
+	_check(player.grenades == 2, "first wave grants two grenades")
+	_check(world.hud._grenades.text.contains("2 / 4"), "HUD displays grenade inventory and cap")
+	player._mouse_active = false
+	player.aim_direction = Vector3.RIGHT
+	_stationary_enemy("walker", Vector3(9, 0, 0))
+	_stationary_enemy("spitter", Vector3(9, 0, 2))
+	var outside: Node3D = _stationary_enemy("walker", Vector3(15.5, 0, 0))
+	var key := InputEventKey.new()
+	key.keycode = KEY_G
+	key.pressed = true
+	Input.parse_input_event(key)
+	key = key.duplicate()
+	key.pressed = false
+	Input.parse_input_event(key)
+	await _frames(2)
+	_check(player.grenades == 1 and get_nodes_in_group("grenades").size() == 1, "G launches one grenade and consumes one charge")
+	_check(not player.try_throw_grenade() and player.grenades == 1, "throw cooldown prevents accidental duplicate grenades")
+	var grenade: Node3D = get_nodes_in_group("grenades")[0]
+	await _frames(10)
+	_check(grenade.position.x > 1.0 and grenade.position.y > 1.0, "grenade travels in an airborne arc")
+	world._pause()
+	var fuse_before: float = grenade.fuse_left
+	var position_before: Vector3 = grenade.position
+	await _frames(30)
+	_check(grenade.fuse_left == fuse_before and grenade.position == position_before, "pause freezes grenade fuse and flight")
+	_check(not player.try_throw_grenade(), "grenades cannot be thrown while paused")
+	world._resume()
+	await _frames(110)
+	_check(world.kills == 2, "timed explosion kills multiple enemies in its radius")
+	_check(outside.health == outside.max_health, "explosion leaves distant enemies unharmed")
+	_check(player.health == player.max_health, "grenades do not cause self damage")
+	_check(get_nodes_in_group("grenades").is_empty(), "exploded grenade cleans up after its visual effect")
+	await _clear_enemies()
+	var near: Node3D = _stationary_enemy("brute", Vector3(1, 0, 0))
+	var direct: Node3D = world.spawn_grenade(Vector3(0, 0.18, 0), Vector3.RIGHT)
+	direct.detonate()
+	var remaining_health: float = near.health
+	direct.detonate()
+	_check(near.health < near.max_health and near.health == remaining_health, "detonation damages each enemy only once")
+	_check(player.health == player.max_health, "point-blank detonation remains safe for survivor")
+	await _clear_enemies()
+	var covered: Node3D = _stationary_enemy("walker", Vector3(7, 0, -9))
+	await _frames(2)
+	world.detonate_grenade(Vector3(7, 0.18, -4), 160.0, 7.0)
+	_check(covered.health == covered.max_health, "solid cover blocks grenade blast")
+	var bouncing: Node3D = world.spawn_grenade(Vector3(17.3, 0.95, 0), Vector3.RIGHT)
+	await _frames(8)
+	_check(bouncing.position.x < 17.8 and bouncing.velocity.x < 0, "grenade bounces from arena boundary")
+	world._clear_projectiles()
+	await _frames(2)
+	_check(get_nodes_in_group("grenades").is_empty(), "wave cleanup removes unexploded grenades")
+	player.grenades = 0
+	player._grenade_left = 0.0
+	_check(not player.try_throw_grenade() and player.grenades == 0, "empty inventory cannot throw or become negative")
+	for supply in [[0, 2], [1, 3], [3, 4], [4, 4]]:
+		player.grenades = supply[0]
+		world._start_wave()
+		_check(player.grenades == supply[1], "wave adds two grenades capped at four from inventory %d" % supply[0])
+	await _fresh_run()
+	_check(world.player.grenades == 2 and get_nodes_in_group("grenades").is_empty(), "restart resets stock to first-wave allowance and clears grenades")
+	print("Integration: grenade input, flight, fuse, pause, blast, cover, cleanup and replenishment checked")
+
+
 func _test_progression() -> void:
 	world._start_run()
 	world.player.set_physics_process(false)
@@ -319,6 +386,7 @@ func _test_progression() -> void:
 	await _frames(2)
 	for expected_wave in range(1, 9):
 		_check(world.wave == expected_wave, "wave advances in sequence: %d" % expected_wave)
+		_check(world.player.grenades == mini(4, expected_wave * 2), "actual wave transition replenishes grenades with a hard cap")
 		while world.spawn_left > 0:
 			world._spawn_next()
 		var expected_enemies: int = 9 + expected_wave * 5 + (1 if expected_wave in [4, 8] else 0)

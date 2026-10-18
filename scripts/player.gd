@@ -10,6 +10,9 @@ const SCREEN_DOWN := Vector3(0.70710678, 0.0, 0.70710678)
 const BASE_SPEED := 6.4
 const DASH_DURATION := 0.20
 const DASH_COOLDOWN := 1.0
+const MAX_GRENADES: int = 4
+const GRENADES_PER_WAVE: int = 2
+const GRENADE_COOLDOWN: float = 0.35
 const WEAPON_DEFINITIONS: Array[Dictionary] = [
 	{"name": "PISTOLA", "damage": 30.0, "interval": 0.22, "magazine": 12, "reload": 0.9, "speed": 36.0, "pellets": 1, "spread": 0.018, "pierce": 0},
 	{"name": "ESCOPETA", "damage": 19.0, "interval": 0.65, "magazine": 6, "reload": 1.35, "speed": 30.0, "pellets": 7, "spread": 0.28, "pierce": 0},
@@ -28,6 +31,8 @@ var weapons: Array[Dictionary] = []
 var dash_cooldown: float = 0.0
 var dash_remaining: float = 0.0
 var kills: int = 0
+var grenades: int = 0
+var _grenade_left: float = 0.0
 var damage_multiplier: float = 1.0
 var speed_multiplier: float = 1.0
 var fire_rate_multiplier: float = 1.0
@@ -69,6 +74,8 @@ func reset_state() -> void:
 	max_health = 100.0
 	health = max_health
 	kills = 0
+	grenades = 0
+	_grenade_left = 0.0
 	damage_multiplier = 1.0
 	speed_multiplier = 1.0
 	fire_rate_multiplier = 1.0
@@ -102,6 +109,8 @@ func _input(event: InputEvent) -> void:
 				try_dash()
 			KEY_R:
 				start_reload()
+			KEY_G:
+				try_throw_grenade()
 			KEY_Q:
 				select_weapon((weapon_index + 1) % weapons.size())
 			KEY_1, KEY_2, KEY_3:
@@ -111,6 +120,8 @@ func _input(event: InputEvent) -> void:
 			select_weapon((weapon_index + 1) % weapons.size())
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			select_weapon((weapon_index + weapons.size() - 1) % weapons.size())
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			try_throw_grenade()
 
 
 func _physics_process(delta: float) -> void:
@@ -118,6 +129,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_read_input()
 	_fire_left = maxf(0.0, _fire_left - delta)
+	_grenade_left = maxf(0.0, _grenade_left - delta)
 	dash_cooldown = maxf(0.0, dash_cooldown - delta)
 	invulnerability = maxf(0.0, invulnerability - delta)
 	_flash_left = maxf(0.0, _flash_left - delta)
@@ -180,6 +192,8 @@ func _read_input() -> void:
 			start_reload()
 		if _pad_pressed(pad, JOY_BUTTON_Y):
 			select_weapon((weapon_index + 1) % weapons.size())
+		if _pad_pressed(pad, JOY_BUTTON_B):
+			try_throw_grenade()
 	motion = motion.limit_length(1.0)
 	move_direction = SCREEN_RIGHT * motion.x + SCREEN_DOWN * motion.y
 
@@ -215,6 +229,37 @@ func _update_aim() -> void:
 				if offset.length_squared() > 0.04:
 					aim_direction = offset.normalized()
 	_visual.rotation.y = atan2(aim_direction.x, aim_direction.z)
+
+
+func replenish_grenades() -> void:
+	grenades = mini(MAX_GRENADES, grenades + GRENADES_PER_WAVE)
+	stats_changed.emit()
+
+
+func try_throw_grenade() -> bool:
+	if not _active() or grenades <= 0 or _grenade_left > 0.0:
+		return false
+	_update_aim()
+	var heading: Vector3 = aim_direction
+	var distance: float = 9.0
+	if _mouse_active:
+		var camera: Camera3D = get_viewport().get_camera_3d()
+		if camera != null:
+			var cursor: Vector2 = get_viewport().get_mouse_position()
+			var origin: Vector3 = camera.project_ray_origin(cursor)
+			var ray: Vector3 = camera.project_ray_normal(cursor)
+			if absf(ray.y) > 0.0001:
+				var offset: Vector3 = origin + ray * (-origin.y / ray.y) - global_position
+				offset.y = 0.0
+				distance = clampf(offset.length(), 1.5, 10.0)
+				if offset.length_squared() > 0.01:
+					heading = offset.normalized()
+	grenades -= 1
+	_grenade_left = GRENADE_COOLDOWN
+	get_tree().current_scene.spawn_grenade(global_position + Vector3.UP * 0.95, heading, distance)
+	_sound("grenade_throw")
+	stats_changed.emit()
+	return true
 
 
 func try_shoot() -> void:

@@ -4,6 +4,7 @@ extends Node3D
 const PLAYER_SCRIPT = preload("res://scripts/player.gd")
 const ENEMY_SCRIPT = preload("res://scripts/enemy.gd")
 const BULLET_SCRIPT = preload("res://scripts/projectile.gd")
+const GRENADE_SCRIPT = preload("res://scripts/grenade.gd")
 const HUD_SCRIPT = preload("res://scripts/hud.gd")
 const LAST_WAVE: int = 8
 const SAVE_PATH: String = "user://dead_shift.cfg"
@@ -174,6 +175,7 @@ func _process(delta: float) -> void:
 			"health": player.health, "max_health": player.max_health, "score": score,
 			"wave": wave, "kills": kills, "enemies": _living_enemies() + spawn_left,
 			"ammo": player.ammo, "magazine": player.magazine_size,
+			"grenades": player.grenades, "max_grenades": player.MAX_GRENADES,
 			"reloading": player.reloading,
 			"reload_progress": 1.0 - player.reload_left / maxf(player.reload_duration, 0.01),
 			"weapon": weapon.get("name", "ARMA"),
@@ -206,6 +208,7 @@ func _physics_process(delta: float) -> void:
 
 func _start_wave() -> void:
 	wave += 1
+	player.replenish_grenades()
 	wave_finished = false
 	spawn_left = 9 + wave * 5
 	spawn_clock = 1.6
@@ -323,6 +326,33 @@ func spawn_enemy_bullet(origin: Vector3, direction: Vector3, damage: float, spee
 func _clear_projectiles() -> void:
 	for node in get_tree().get_nodes_in_group("projectiles"):
 		node.queue_free()
+	for node in get_tree().get_nodes_in_group("grenades"):
+		node.queue_free()
+
+func spawn_grenade(origin: Vector3, direction: Vector3, distance: float = 9.0) -> Node3D:
+	var grenade: CharacterBody3D = GRENADE_SCRIPT.new()
+	grenade.configure(origin, direction, distance)
+	runtime.add_child(grenade)
+	return grenade
+
+func detonate_grenade(at: Vector3, damage: float, radius: float) -> void:
+	if not is_gameplay_active():
+		return
+	var center: Vector3 = Vector3(at.x, maxf(0.35, at.y), at.z)
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if enemy.get_parent() != runtime or enemy.dead:
+			continue
+		var target: Vector3 = enemy.global_position + Vector3.UP * 0.6
+		var distance: float = Vector2(target.x - center.x, target.z - center.z).length()
+		if distance > radius:
+			continue
+		var query := PhysicsRayQueryParameters3D.create(center, target, 2)
+		query.hit_from_inside = true
+		if get_world_3d().direct_space_state.intersect_ray(query).is_empty():
+			enemy.take_damage(damage * lerpf(1.0, 0.7, distance / radius))
+	spawn_particles(center, Color("ffc16c"), 12)
+	add_trauma(0.65)
+	play_sound("explosion")
 
 func add_trauma(amount: float) -> void:
 	trauma = minf(1.0, trauma + amount)
@@ -585,6 +615,7 @@ func _build_audio() -> void:
 		"reload": [800.0, 0.06, 0.3], "hurt": [80.0, 0.2, 0.6],
 		"wave": [240.0, 0.5, 0.05], "upgrade": [660.0, 0.24, 0.0],
 		"death": [70.0, 0.65, 0.35], "spit": [145.0, 0.15, 0.4],
+		"grenade_throw": [420.0, 0.12, 0.25], "explosion": [55.0, 0.48, 0.85],
 	}
 	for kind in specs:
 		var spec: Array = specs[kind]

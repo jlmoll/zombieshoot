@@ -18,6 +18,7 @@ godot --path .
 | Esquivar | Espacio | A o LB |
 | Recargar | R | X |
 | Cambiar arma | Q, rueda o 1–3 | Y |
+| Lanzar granada | G o clic derecho | B |
 | Pausa / continuar | Esc o P | Start |
 | Navegar menús | Flechas y Enter, o ratón | Cruceta / stick y A |
 | Pantalla completa | F11 | — |
@@ -28,6 +29,7 @@ El movimiento y la puntería son independientes. La esquiva concede invulnerabil
 ## Mecánicas
 
 - Pistola, escopeta de perdigones y subfusil, cada uno con cargador, cadencia, dispersión y recarga propios.
+- Granadas con trayectoria en arco, rebote, mecha de 1,2 segundos y daño de área sin daño al jugador. Se suman **2 al empezar cada oleada**, incluida la primera, hasta un máximo de **4**. Con ratón se lanzan hacia el cursor (alcance máximo de 10 m); con mando, en la dirección de apuntado. La cobertura bloquea la explosión.
 - Zombis básicos, corredores, brutos, escupidores y jefes con ataques telegrafiados y proyectiles.
 - Navegación alrededor de obstáculos, separación de la horda y colisiones con el escenario.
 - Una elección de tres mejoras entre oleadas, recuperación parcial y suministros de vida y munición.
