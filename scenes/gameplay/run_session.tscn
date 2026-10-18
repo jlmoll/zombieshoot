@@ -1,0 +1,34 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay/run_session.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/actors/player.tscn" id="2"]
+[ext_resource type="Script" path="res://scripts/gameplay/enemy_spawner.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/gameplay/combat_service.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/gameplay/pickup_manager.gd" id="5"]
+[ext_resource type="Script" path="res://scripts/gameplay/impact_effects.gd" id="6"]
+[ext_resource type="Script" path="res://scripts/gameplay/wave_director.gd" id="7"]
+
+[node name="RunSession" type="Node3D"]
+process_mode = 1
+script = ExtResource("1")
+
+[node name="Player" parent="." instance=ExtResource("2")]
+
+[node name="Enemies" type="Node3D" parent="."]
+script = ExtResource("3")
+
+[node name="Combat" type="Node3D" parent="."]
+script = ExtResource("4")
+
+[node name="Projectiles" type="Node3D" parent="Combat"]
+
+[node name="Grenades" type="Node3D" parent="Combat"]
+
+[node name="Pickups" type="Node3D" parent="."]
+script = ExtResource("5")
+
+[node name="Effects" type="Node3D" parent="."]
+script = ExtResource("6")
+
+[node name="WaveDirector" type="Node" parent="."]
+script = ExtResource("7")

@@ -1,9 +1,14 @@
 class_name Survivor
 extends CharacterBody3D
-## Screen-relative twin-stick survivor. All art is deliberately primitive geometry.
+## Screen-relative twin-stick gameplay; presentation belongs to the Visuals child.
 
 signal stats_changed
 signal died
+signal bullet_requested(origin: Vector3, direction: Vector3, damage: float, speed: float, pierce: int)
+signal grenade_requested(origin: Vector3, direction: Vector3, distance: float)
+signal sound_requested(kind: String)
+signal particles_requested(at: Vector3, color: Color, count: int)
+signal trauma_requested(amount: float)
 
 const SCREEN_RIGHT := Vector3(0.70710678, 0.0, -0.70710678)
 const SCREEN_DOWN := Vector3(0.70710678, 0.0, 0.70710678)
@@ -45,23 +50,12 @@ var _fire_left: float = 0.0
 var _dash_direction := Vector3.ZERO
 var _mouse_active: bool = true
 var _pad_buttons: Dictionary = {}
-var _visual: Node3D
-var _gun: Node3D
-var _flash: MeshInstance3D
-var _body_material: StandardMaterial3D
-var _flash_left: float = 0.0
-var _recoil: float = 0.0
+@onready var visuals: SurvivorVisuals = $Visuals
 var _hud_tick: float = 0.0
-var _walk_phase: float = 0.0
 var _alive: bool = true
 
 
 func _ready() -> void:
-	add_to_group("player")
-	collision_layer = 1
-	collision_mask = 2
-	motion_mode = CharacterBody3D.MOTION_MODE_FLOATING
-	_build_model()
 	reset_state()
 
 
@@ -91,7 +85,26 @@ func reset_state() -> void:
 	_alive = true
 	velocity = Vector3.ZERO
 	_sync_weapon()
+	if is_instance_valid(visuals):
+		visuals.reset_pose()
 	stats_changed.emit()
+
+
+func get_stats() -> Dictionary:
+	var weapon: Dictionary = weapons[weapon_index] if not weapons.is_empty() else WEAPON_DEFINITIONS[0]
+	return {
+		"health": health,
+		"max_health": max_health,
+		"ammo": ammo,
+		"magazine": magazine_size,
+		"grenades": grenades,
+		"max_grenades": MAX_GRENADES,
+		"reloading": reloading,
+		"reload_progress": 1.0 - reload_left / maxf(reload_duration, 0.01),
+		"weapon": weapon.get("name", "ARMA"),
+		"dash_ready": dash_cooldown <= 0.0,
+		"dash_progress": 1.0 - dash_cooldown / maxf(DASH_COOLDOWN * dash_multiplier, 0.01),
+	}
 
 
 func _input(event: InputEvent) -> void:
@@ -132,8 +145,6 @@ func _physics_process(delta: float) -> void:
 	_grenade_left = maxf(0.0, _grenade_left - delta)
 	dash_cooldown = maxf(0.0, dash_cooldown - delta)
 	invulnerability = maxf(0.0, invulnerability - delta)
-	_flash_left = maxf(0.0, _flash_left - delta)
-	_recoil = move_toward(_recoil, 0.0, delta * 2.5)
 	if reloading:
 		reload_left = maxf(0.0, reload_left - delta)
 		if reload_left <= 0.0:
@@ -158,7 +169,7 @@ func _physics_process(delta: float) -> void:
 		trigger_firing = Input.get_joy_axis(pad, JOY_AXIS_TRIGGER_RIGHT) > 0.25 or Input.is_joy_button_pressed(pad, JOY_BUTTON_RIGHT_SHOULDER)
 	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or stick_firing or trigger_firing:
 		try_shoot()
-	_animate(delta)
+	visuals.animate(delta, aim_direction, velocity.length(), invulnerability, dash_remaining)
 	_hud_tick -= delta
 	if _hud_tick <= 0.0:
 		_hud_tick = 0.08
@@ -166,10 +177,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _active() -> bool:
-	if not _alive:
-		return false
-	var world: Node = get_tree().current_scene
-	return not world.has_method("is_gameplay_active") or bool(world.call("is_gameplay_active"))
+	return _alive and is_inside_tree() and not get_tree().paused
 
 
 func _pad_id() -> int:
@@ -228,7 +236,7 @@ func _update_aim() -> void:
 				offset.y = 0.0
 				if offset.length_squared() > 0.04:
 					aim_direction = offset.normalized()
-	_visual.rotation.y = atan2(aim_direction.x, aim_direction.z)
+	visuals.set_aim(aim_direction)
 
 
 func replenish_grenades() -> void:
@@ -256,7 +264,7 @@ func try_throw_grenade() -> bool:
 					heading = offset.normalized()
 	grenades -= 1
 	_grenade_left = GRENADE_COOLDOWN
-	get_tree().current_scene.spawn_grenade(global_position + Vector3.UP * 0.95, heading, distance)
+	grenade_requested.emit(global_position + Vector3.UP * 0.95, heading, distance)
 	_sound("grenade_throw")
 	stats_changed.emit()
 	return true
@@ -285,11 +293,10 @@ func try_shoot() -> void:
 		if pellets > 1:
 			angle = lerpf(-spread, spread, float(pellet) / float(pellets - 1)) + randf_range(-0.025, 0.025)
 		var direction: Vector3 = aim_direction.rotated(Vector3.UP, angle)
-		get_tree().current_scene.call("spawn_player_bullet", origin, direction, float(weapon["damage"]) * damage_multiplier, float(weapon["speed"]), int(weapon["pierce"]))
-	_flash_left = 0.055
-	_recoil = 0.14 if weapon_index == 1 else 0.07
+		bullet_requested.emit(origin, direction, float(weapon["damage"]) * damage_multiplier, float(weapon["speed"]), int(weapon["pierce"]))
+	visuals.show_shot(weapon_index)
 	_sound(["pistol", "shotgun", "smg"][weapon_index])
-	get_tree().current_scene.call("add_trauma", 0.09 if weapon_index == 1 else 0.025)
+	trauma_requested.emit(0.09 if weapon_index == 1 else 0.025)
 	stats_changed.emit()
 
 
@@ -320,8 +327,8 @@ func _sync_weapon() -> void:
 	ammo = int(weapon["ammo"])
 	magazine_size = int(weapon["magazine"])
 	reload_duration = float(weapon["reload"]) * reload_multiplier
-	if is_instance_valid(_gun):
-		_gun.scale = Vector3(1.35, 1.15, 1.25) if weapon_index == 1 else Vector3.ONE
+	if is_instance_valid(visuals):
+		visuals.set_weapon(weapon_index)
 
 
 func try_dash() -> void:
@@ -332,7 +339,7 @@ func try_dash() -> void:
 	dash_cooldown = DASH_COOLDOWN * dash_multiplier
 	invulnerability = maxf(invulnerability, DASH_DURATION + 0.04)
 	_sound("dash")
-	get_tree().current_scene.call("spawn_particles", global_position + Vector3.UP * 0.2, Color(0.25, 0.95, 1.0), 10)
+	particles_requested.emit(global_position + Vector3.UP * 0.2, Color(0.25, 0.95, 1.0), 10)
 	stats_changed.emit()
 
 
@@ -342,8 +349,8 @@ func take_damage(amount: float) -> void:
 	health = maxf(0.0, health - amount)
 	invulnerability = 0.8
 	_sound("hurt")
-	get_tree().current_scene.call("add_trauma", 0.38)
-	get_tree().current_scene.call("spawn_particles", global_position + Vector3.UP * 0.7, Color(1.0, 0.35, 0.2), 12)
+	trauma_requested.emit(0.38)
+	particles_requested.emit(global_position + Vector3.UP * 0.7, Color(1.0, 0.35, 0.2), 12)
 	stats_changed.emit()
 	if health <= 0.0:
 		_alive = false
@@ -395,78 +402,4 @@ func refill_ammo() -> void:
 
 
 func _sound(kind: String) -> void:
-	get_tree().current_scene.call("play_sound", kind)
-
-
-func _animate(delta: float) -> void:
-	_walk_phase += delta * velocity.length() * 1.8
-	_visual.position.y = absf(sin(_walk_phase)) * 0.055 if velocity.length() > 0.2 else 0.0
-	_visual.rotation.z = sin(_walk_phase) * 0.045 if velocity.length() > 0.2 else 0.0
-	_gun.position.z = -_recoil
-	_flash.visible = _flash_left > 0.0
-	_visual.visible = invulnerability <= 0.0 or dash_remaining > 0.0 or fmod(invulnerability, 0.12) < 0.075
-	_body_material.emission_enabled = dash_remaining > 0.0
-	_body_material.emission = Color(0.1, 0.7, 0.8)
-	_body_material.emission_energy_multiplier = 1.0
-
-
-func _material(color: Color, emission: bool = false) -> StandardMaterial3D:
-	var material := StandardMaterial3D.new()
-	material.albedo_color = color
-	material.roughness = 0.7
-	if emission:
-		material.emission_enabled = true
-		material.emission = color
-		material.emission_energy_multiplier = 2.0
-	return material
-
-
-func _mesh(parent: Node3D, mesh: Mesh, location: Vector3, material: Material) -> MeshInstance3D:
-	var instance := MeshInstance3D.new()
-	instance.mesh = mesh
-	instance.material_override = material
-	instance.position = location
-	parent.add_child(instance)
-	return instance
-
-
-func _build_model() -> void:
-	var collision := CollisionShape3D.new()
-	var capsule := CapsuleShape3D.new()
-	capsule.radius = 0.33
-	capsule.height = 1.35
-	collision.shape = capsule
-	collision.position.y = 0.675
-	add_child(collision)
-	_visual = Node3D.new()
-	add_child(_visual)
-	_body_material = _material(Color(0.12, 0.67, 0.78))
-	var torso := CapsuleMesh.new()
-	torso.radius = 0.3
-	torso.height = 0.8
-	_mesh(_visual, torso, Vector3(0, 0.67, 0), _body_material)
-	var head := SphereMesh.new()
-	head.radius = 0.235
-	head.height = 0.47
-	_mesh(_visual, head, Vector3(0, 1.22, 0), _material(Color(0.91, 0.75, 0.52)))
-	var visor := BoxMesh.new()
-	visor.size = Vector3(0.37, 0.12, 0.1)
-	_mesh(_visual, visor, Vector3(0, 1.25, 0.21), _material(Color(0.025, 0.1, 0.15)))
-	var boot := BoxMesh.new()
-	boot.size = Vector3(0.22, 0.28, 0.32)
-	var dark: Material = _material(Color(0.04, 0.1, 0.13))
-	_mesh(_visual, boot, Vector3(-0.17, 0.15, 0), dark)
-	_mesh(_visual, boot, Vector3(0.17, 0.15, 0), dark)
-	_gun = Node3D.new()
-	_visual.add_child(_gun)
-	var receiver := BoxMesh.new()
-	receiver.size = Vector3(0.18, 0.18, 0.6)
-	_mesh(_gun, receiver, Vector3(0.15, 0.85, 0.49), _material(Color(0.18, 0.23, 0.28)))
-	var barrel := BoxMesh.new()
-	barrel.size = Vector3(0.09, 0.09, 0.25)
-	_mesh(_gun, barrel, Vector3(0.15, 0.85, 0.84), dark)
-	var flash := SphereMesh.new()
-	flash.radius = 0.16
-	flash.height = 0.22
-	_flash = _mesh(_gun, flash, Vector3(0.15, 0.85, 1.0), _material(Color(1.0, 0.79, 0.2), true))
-	_flash.visible = false
+	sound_requested.emit(kind)

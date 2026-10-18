@@ -64,22 +64,23 @@ func _frames(count: int) -> void:
 
 
 func _fresh_run() -> void:
-	world._start_run()
-	world.spawn_left = 999
-	world.spawn_clock = 10000.0
-	world.player.invulnerability = 0.0
+	world.start_run()
+	world.session.waves.spawn_left = 999
+	world.session.waves.spawn_clock = 10000.0
+	world.session.player.invulnerability = 0.0
 	await _frames(2)
 
 
 func _clear_enemies() -> void:
 	for enemy in get_nodes_in_group("enemies"):
-		enemy.queue_free()
-	world._clear_projectiles()
+		if enemy.get_parent() == world.session.enemies:
+			enemy.queue_free()
+	world.session.combat.clear_projectiles()
 	await _frames(2)
 
 
 func _stationary_enemy(kind: String, at: Vector3) -> Node3D:
-	var enemy: Node3D = world._spawn_enemy(kind, at)
+	var enemy: Node3D = world.session.enemies.spawn(kind, at, world.session.waves.wave)
 	enemy.set_physics_process(false)
 	return enemy
 
@@ -102,9 +103,13 @@ func _run() -> void:
 		return
 	# Fixed-fps headless runs advance faster than the audio mixer. Keep procedural
 	# sound generation loaded, but avoid starting real-time playback in this suite.
-	world.muted = true
-	_check(world.mode == "title" and paused, "title pauses the simulation")
+	world.audio.muted = true
+	_check(world.mode == world.Mode.TITLE and paused, "title pauses the simulation")
+	await _test_menu_focus()
 	await _test_lifecycle_and_player()
+	await _test_session_isolation()
+	await _test_actor_isolation()
+	await _test_deferred_wave_pause()
 	await _test_projectile_physics()
 	await _test_grenades()
 	await _test_enemy_navigation_and_attacks()
@@ -112,17 +117,35 @@ func _run() -> void:
 	await _finish()
 
 
+func _test_menu_focus() -> void:
+	world.hud.set_muted(world.audio.muted)
+	var sound: Button = world.hud.menus.find_child("SoundButton", true, false) as Button
+	sound.grab_focus()
+	var muted_before: bool = world.audio.muted
+	var enter := InputEventKey.new()
+	enter.keycode = KEY_ENTER
+	enter.pressed = true
+	Input.parse_input_event(enter)
+	enter = enter.duplicate()
+	enter.pressed = false
+	Input.parse_input_event(enter)
+	await _frames(3)
+	_check(world.mode == world.Mode.TITLE and world.audio.muted != muted_before, "Enter activates focused sound button without starting a run")
+	world.audio.muted = true
+	world.hud.set_muted(true)
+
+
 func _test_lifecycle_and_player() -> void:
 	await _fresh_run()
-	_check(world.mode == "playing" and not paused and world.wave == 1, "start begins wave one")
-	_check(world.player.health == 100.0 and world.player.weapons.size() == 3, "fresh survivor has full health and three weapons")
+	_check(world.mode == world.Mode.PLAYING and not paused and world.session.waves.wave == 1, "start begins wave one")
+	_check(world.session.player.health == 100.0 and world.session.player.weapons.size() == 3, "fresh survivor has full health and three weapons")
 	# Exercise the real input dispatch, including events sent by embedded windows.
 	var key: InputEventKey = InputEventKey.new()
 	key.keycode = KEY_2
 	key.pressed = true
 	Input.parse_input_event(key)
 	await _frames(2)
-	_check(world.player.weapon_index == 1, "logical key event selects shotgun through viewport input")
+	_check(world.session.player.weapon_index == 1, "logical key event selects shotgun through viewport input")
 	key.pressed = false
 	Input.parse_input_event(key)
 	key = InputEventKey.new()
@@ -131,7 +154,7 @@ func _test_lifecycle_and_player() -> void:
 	key.pressed = true
 	Input.parse_input_event(key)
 	await _frames(2)
-	_check(world.player.weapon_index == 2, "physical key event cycles weapon through viewport input")
+	_check(world.session.player.weapon_index == 2, "physical key event cycles weapon through viewport input")
 	key.pressed = false
 	Input.parse_input_event(key)
 	key = InputEventKey.new()
@@ -140,28 +163,28 @@ func _test_lifecycle_and_player() -> void:
 	key.pressed = true
 	Input.parse_input_event(key)
 	await _frames(2)
-	_check(world.player.weapon_index == 0, "hotkey uses visible logical label when remapped scan code differs")
+	_check(world.session.player.weapon_index == 0, "hotkey uses visible logical label when remapped scan code differs")
 	key.pressed = false
 	Input.parse_input_event(key)
 	key = InputEventKey.new()
 	key.keycode = KEY_D
 	key.pressed = true
 	Input.parse_input_event(key)
-	var start_position: Vector3 = world.player.position
+	var start_position: Vector3 = world.session.player.position
 	await _frames(10)
 	key.pressed = false
 	Input.parse_input_event(key)
-	_check(world.player.position.x > start_position.x + 0.3 and world.player.position.z < start_position.z - 0.3, "logical movement key travels right relative to isometric camera")
-	world.player.position = Vector3.ZERO
-	world.player.select_weapon(0)
+	_check(world.session.player.position.x > start_position.x + 0.3 and world.session.player.position.z < start_position.z - 0.3, "logical movement key travels right relative to isometric camera")
+	world.session.player.position = Vector3.ZERO
+	world.session.player.select_weapon(0)
 	await _frames(10)
-	world._pause()
-	var elapsed_before: float = world.elapsed
+	world.pause_run()
+	var elapsed_before: float = world.session.elapsed
 	await _frames(4)
-	_check(paused and world.mode == "paused" and world.elapsed == elapsed_before, "pause stops gameplay time")
-	world._resume()
+	_check(paused and world.mode == world.Mode.PAUSED and world.session.elapsed == elapsed_before, "pause stops gameplay time")
+	world.resume_run()
 	_check(not paused and world.is_gameplay_active(), "resume restores gameplay")
-	var player: Node3D = world.player
+	var player: Node3D = world.session.player
 	player.take_damage(20.0)
 	_check(player.health == 80.0, "damage subtracts health")
 	player.take_damage(20.0)
@@ -221,20 +244,113 @@ func _test_lifecycle_and_player() -> void:
 	player.position = Vector3.ZERO
 	player.health = 30.0
 	player.ammo = 0
-	world._spawn_drop(Vector3.ZERO, "health")
-	world._spawn_drop(Vector3.ZERO, "ammo")
+	world.session.pickups.spawn_pickup(Vector3.ZERO, "health")
+	world.session.pickups.spawn_pickup(Vector3.ZERO, "ammo")
 	await _frames(3)
-	_check(player.health == 55.0 and player.ammo == player.magazine_size and world.drops.is_empty(), "health and ammo pickups apply and disappear")
+	_check(player.health == 55.0 and player.ammo == player.magazine_size and world.session.pickups.get_child_count() == 0, "health and ammo pickups apply and disappear")
 	print("Integration: survivor, weapons, upgrades, dash, pickups and pause checked")
+
+
+func _test_session_isolation() -> void:
+	await _fresh_run()
+	var previous_session: Node3D = world.session
+	var previous_player: Node3D = previous_session.player
+	var arena: Node3D = world.arena
+	var audio: Node = world.audio
+	var save_data: Node = world.save_data
+	var best_before: int = save_data.best_score
+	var muted_before: bool = save_data.muted
+	_check(previous_player.get_parent() == previous_session, "session scene owns survivor")
+	_check(previous_session.waves.get_parent() == previous_session and previous_session.enemies.get_parent() == previous_session, "session owns wave scheduler and enemy population")
+	_check(previous_session.combat.get_parent() == previous_session and previous_session.pickups.get_parent() == previous_session and previous_session.effects.get_parent() == previous_session, "session owns combat, pickups and effects")
+	_check(previous_session.process_mode == Node.PROCESS_MODE_PAUSABLE, "session is a pausable simulation boundary")
+	_check(world.arena.navigation.target == previous_player, "navigation target is injected from active session")
+	_check(previous_session.enemies.player == previous_player and previous_session.waves.target == previous_player, "spawn and wave services receive active survivor")
+	var old_enemy: Node3D = _stationary_enemy("walker", Vector3(10, 0, 5))
+	_check(old_enemy.get_parent() == previous_session.enemies and old_enemy.target == previous_player, "spawner owns enemy and injects its target")
+	_check(old_enemy.navigation == world.arena.navigation and old_enemy.visuals.get_parent() == old_enemy, "enemy navigation is injected while visuals remain actor-owned")
+	previous_session.combat.spawn_player_bullet(Vector3(4, 0.8, 4), Vector3.RIGHT, 1.0, 1.0)
+	var old_projectile: Node3D = previous_session.combat.get_node("Projectiles").get_child(0) as Node3D
+	var old_grenade: Node3D = previous_session.combat.spawn_grenade(Vector3(4, 1, 4), Vector3.RIGHT)
+	_check(old_grenade.get_parent() == previous_session.combat.get_node("Grenades"), "combat owns grenade in semantic container")
+	previous_session.pickups.spawn_pickup(Vector3(12, 0, 12), "health")
+	var old_pickup: Node3D = previous_session.pickups.get_child(0) as Node3D
+	previous_session.effects.spawn_particles(Vector3(4, 1, 4), Color.WHITE, 3)
+	var old_effect: Node3D = previous_session.effects.get_child(0) as Node3D
+	world.start_run()
+	world.session.waves.spawn_left = 999
+	world.session.waves.spawn_clock = 10000.0
+	await _frames(3)
+	_check(not is_instance_valid(previous_session) and not is_instance_valid(previous_player), "restart frees previous session and survivor")
+	_check(not is_instance_valid(old_enemy) and not is_instance_valid(old_projectile) and not is_instance_valid(old_grenade), "restart frees old enemies, projectiles and grenades")
+	_check(not is_instance_valid(old_pickup) and not is_instance_valid(old_effect), "restart frees pickups and effects through session ownership")
+	_check(get_nodes_in_group("enemies").is_empty() and get_nodes_in_group("projectiles").is_empty() and get_nodes_in_group("grenades").is_empty(), "no previous-run combat nodes remain in scene groups")
+	_check(get_nodes_in_group("player").size() == 1 and get_nodes_in_group("player")[0] == world.session.player, "exactly one active survivor remains after restart")
+	_check(world.arena == arena and world.audio == audio and world.save_data == save_data, "restart preserves arena, audio and persistence services")
+	_check(save_data.best_score == best_before and save_data.muted == muted_before, "restart preserves record and saved mute preference")
+	_check(world.arena.navigation.target == world.session.player, "restart retargets shared navigation to new survivor")
+	print("Integration: semantic ownership, dependency injection, restart cleanup and persistence isolation checked")
+
+
+func _test_deferred_wave_pause() -> void:
+	await _fresh_run()
+	var waves: Node = world.session.waves
+	waves.set_physics_process(false)
+	waves.spawn_left = 0
+	waves.wave_finished = true
+	world.pause_run()
+	waves._emit_wave_cleared.call_deferred()
+	await _frames(2)
+	_check(world.mode == world.Mode.PAUSED and not waves.wave_finished, "pause defers completed wave without losing its notification")
+	world.resume_run()
+	waves.set_physics_process(true)
+	await _frames(4)
+	_check(world.mode == world.Mode.UPGRADES and paused, "resuming after deferred wave completion still opens upgrades")
+
+
+func _test_actor_isolation() -> void:
+	await _fresh_run()
+	var isolated := Node3D.new()
+	isolated.name = "IsolatedActors"
+	isolated.process_mode = Node.PROCESS_MODE_DISABLED
+	root.add_child(isolated)
+	var player_scene: PackedScene = load("res://scenes/actors/player.tscn") as PackedScene
+	var enemy_scene: PackedScene = load("res://scenes/actors/enemy.tscn") as PackedScene
+	var local_player: Node3D = player_scene.instantiate() as Node3D
+	isolated.add_child(local_player)
+	var local_enemy: Node3D = enemy_scene.instantiate() as Node3D
+	local_enemy.configure("walker", 1)
+	local_enemy.target = local_player
+	isolated.add_child(local_enemy)
+	var shots: Array[int] = [0]
+	var defeats: Array[int] = [0]
+	local_player.bullet_requested.connect(func(_origin: Vector3, _direction: Vector3, _damage: float, _speed: float, _pierce: int) -> void: shots[0] += 1)
+	local_enemy.defeated.connect(func(_enemy: Node3D) -> void: defeats[0] += 1)
+	local_enemy.take_damage(18.0)
+	local_enemy.configure("walker", 2)
+	_check(local_enemy.health == local_enemy.max_health and not local_enemy.visuals.get_node("HealthBar").visible and is_equal_approx(local_enemy.visuals._health_fill.scale.x, 0.9), "reconfiguring same enemy type resets health presentation with health state")
+	var score_before: int = world.session.score
+	var kills_before: int = world.session.kills
+	var bullets_before: int = world.session.combat.get_node("Projectiles").get_child_count()
+	local_player.try_shoot()
+	_check(shots[0] == 1 and local_player.ammo == local_player.magazine_size - 1, "isolated survivor emits shooting request without a game-root dependency")
+	_check(world.session.combat.get_node("Projectiles").get_child_count() == bullets_before, "unconnected actor cannot spawn projectiles into unrelated session")
+	local_enemy.take_damage(100000.0)
+	local_enemy.take_damage(100000.0)
+	_check(defeats[0] == 1, "isolated zombie emits one defeated signal without a game-root dependency")
+	_check(world.session.score == score_before and world.session.kills == kills_before, "isolated actor death cannot award score to unrelated session")
+	isolated.queue_free()
+	await _frames(2)
+	_check(get_nodes_in_group("player").size() == 1 and world.session.enemies.living_count() == 0, "isolated actor cleanup leaves active session unchanged")
 
 
 func _test_projectile_physics() -> void:
 	await _fresh_run()
-	var player: Node3D = world.player
+	var player: Node3D = world.session.player
 	player.set_physics_process(false)
 	var enemy: Node3D = _stationary_enemy("walker", Vector3(4, 0, 0))
 	await _frames(2)
-	world.spawn_player_bullet(Vector3(1, 0.8, 0), Vector3.RIGHT, 12.0, 80.0)
+	world.session.combat.spawn_player_bullet(Vector3(1, 0.8, 0), Vector3.RIGHT, 12.0, 80.0)
 	await _frames(8)
 	_check(is_equal_approx(enemy.health, enemy.max_health - 12.0), "swept friendly projectile hits enemy exactly once")
 	_check(player.health == 100.0, "friendly projectile cannot harm survivor")
@@ -242,82 +358,82 @@ func _test_projectile_physics() -> void:
 	var first: Node3D = _stationary_enemy("walker", Vector3(4, 0, 2))
 	var second: Node3D = _stationary_enemy("walker", Vector3(7, 0, 2))
 	await _frames(2)
-	world.spawn_player_bullet(Vector3(1, 0.8, 2), Vector3.RIGHT, 10.0, 120.0, 1)
+	world.session.combat.spawn_player_bullet(Vector3(1, 0.8, 2), Vector3.RIGHT, 10.0, 120.0, 1)
 	await _frames(8)
 	_check(first.health == first.max_health - 10.0 and second.health == second.max_health - 10.0, "penetration hits two bodies once each")
 	await _clear_enemies()
 	var covered: Node3D = _stationary_enemy("walker", Vector3(7, 0, -10))
 	await _frames(2)
-	world.spawn_player_bullet(Vector3(7, 0.8, -4), Vector3.FORWARD, 99.0, 150.0)
+	world.session.combat.spawn_player_bullet(Vector3(7, 0.8, -4), Vector3.FORWARD, 99.0, 150.0)
 	await _frames(8)
 	_check(covered.health == covered.max_health and get_nodes_in_group("projectiles").is_empty(), "solid cover blocks and destroys fast projectile")
 	await _clear_enemies()
 	var ignored: Node3D = _stationary_enemy("walker", Vector3(2, 0, 0))
 	await _frames(2)
 	player.invulnerability = 0.0
-	world.spawn_enemy_bullet(Vector3(4, 0.8, 0), Vector3.LEFT, 9.0, 80.0)
+	world.session.combat.spawn_enemy_bullet(Vector3(4, 0.8, 0), Vector3.LEFT, 9.0, 80.0)
 	await _frames(8)
 	_check(player.health == 91.0 and ignored.health == ignored.max_health, "hostile projectile ignores zombies and hits survivor")
 	await _clear_enemies()
-	var kills_before: int = world.kills
+	var kills_before: int = world.session.kills
 	for kind in ["walker", "runner", "brute", "spitter", "boss"]:
 		var target: Node3D = _stationary_enemy(kind, Vector3(5, 0, -4))
 		target.take_damage(100000.0)
 		target.take_damage(100000.0)
-	_check(world.kills == kills_before + 5, "every archetype reports exactly one death")
+	_check(world.session.kills == kills_before + 5, "every archetype reports exactly one death")
 	await _frames(2)
-	_check(world._living_enemies() == 0, "dead archetypes leave active enemy population")
+	_check(world.session.enemies.living_count() == 0, "dead archetypes leave active enemy population")
 	print("Integration: projectile masks, continuous collisions, cover, penetration and death checked")
 
 
 func _test_enemy_navigation_and_attacks() -> void:
 	await _fresh_run()
-	world.player.set_physics_process(false)
-	world.player.position = Vector3(7, 0, -11)
-	world.player.invulnerability = 1000.0
-	world._build_flow()
-	var walker: Node3D = world._spawn_enemy("walker", Vector3(7, 0, -3))
+	world.session.player.set_physics_process(false)
+	world.session.player.position = Vector3(7, 0, -11)
+	world.session.player.invulnerability = 1000.0
+	world.arena.navigation.rebuild()
+	var walker: Node3D = world.session.enemies.spawn("walker", Vector3(7, 0, -3), world.session.waves.wave)
 	var crossed_cover: bool = false
 	for step in range(75):
 		await _frames(6)
-		for rect: Rect2 in world.obstacles:
+		for rect: Rect2 in world.arena.navigation.obstacles:
 			if rect.grow(-0.75).has_point(Vector2(walker.position.x, walker.position.z)):
 				crossed_cover = true
 	_check(not crossed_cover, "horde AI navigates around solid cover")
-	_check(walker.position.distance_to(world.player.position) < 3.5, "horde flow navigation reaches survivor behind crate")
+	_check(walker.position.distance_to(world.session.player.position) < 3.5, "horde flow navigation reaches survivor behind crate")
 	await _clear_enemies()
-	world.player.position = Vector3.ZERO
-	world._build_flow()
-	var spitter: Node3D = world._spawn_enemy("spitter", Vector3(0, 0, -9))
+	world.session.player.position = Vector3.ZERO
+	world.arena.navigation.rebuild()
+	var spitter: Node3D = world.session.enemies.spawn("spitter", Vector3(0, 0, -9), world.session.waves.wave)
 	spitter._attack_cooldown = 0.0
 	await _frames(5)
-	_check(spitter._windup > 0.0 and spitter._warning.visible, "spitter attack has visible windup")
+	_check(spitter._windup > 0.0 and spitter.visuals.warning.visible, "spitter attack has visible windup")
 	await _frames(45)
 	_check(get_nodes_in_group("projectiles").size() >= 3, "spitter fires three-projectile fan after windup")
 	await _clear_enemies()
-	var boss: Node3D = world._spawn_enemy("boss", Vector3(0, 0, -10))
+	var boss: Node3D = world.session.enemies.spawn("boss", Vector3(0, 0, -10), world.session.waves.wave)
 	boss._attack_cooldown = 0.0
 	await _frames(5)
-	_check(boss._windup > 0.0 and boss._warning.visible, "boss attack has visible windup")
+	_check(boss._windup > 0.0 and boss.visuals.warning.visible, "boss attack has visible windup")
 	await _frames(52)
 	_check(get_nodes_in_group("projectiles").size() >= 10, "boss emits radial projectile pattern")
 	await _clear_enemies()
-	world.player.health = 100.0
-	world.player.invulnerability = 0.0
-	var slammer: Node3D = world._spawn_enemy("boss", Vector3(0, 0, -3))
+	world.session.player.health = 100.0
+	world.session.player.invulnerability = 0.0
+	var slammer: Node3D = world.session.enemies.spawn("boss", Vector3(0, 0, -3), world.session.waves.wave)
 	slammer._attack_cooldown = 0.0
 	await _frames(5)
-	_check(slammer._attack == "slam" and slammer._warning.visible, "nearby boss telegraphs area slam")
+	_check(slammer._attack == "slam" and slammer.visuals.warning.visible, "nearby boss telegraphs area slam")
 	await _frames(60)
-	_check(world.player.health == 74.0, "slam deals advertised area damage after windup")
+	_check(world.session.player.health == 74.0, "slam deals advertised area damage after windup")
 	print("Integration: obstacle routing, telegraphs, ranged AI and boss patterns checked")
 
 
 func _test_grenades() -> void:
 	await _fresh_run()
-	var player: Node3D = world.player
+	var player: Node3D = world.session.player
 	_check(player.grenades == 2, "first wave grants two grenades")
-	_check(world.hud._grenades.text.contains("2 / 4"), "HUD displays grenade inventory and cap")
+	_check(world.hud.gameplay.grenades_label.text.contains("2 / 4"), "HUD displays grenade inventory and cap")
 	player._mouse_active = false
 	player.aim_direction = Vector3.RIGHT
 	_stationary_enemy("walker", Vector3(9, 0, 0))
@@ -336,21 +452,21 @@ func _test_grenades() -> void:
 	var grenade: Node3D = get_nodes_in_group("grenades")[0]
 	await _frames(10)
 	_check(grenade.position.x > 1.0 and grenade.position.y > 1.0, "grenade travels in an airborne arc")
-	world._pause()
+	world.pause_run()
 	var fuse_before: float = grenade.fuse_left
 	var position_before: Vector3 = grenade.position
 	await _frames(30)
 	_check(grenade.fuse_left == fuse_before and grenade.position == position_before, "pause freezes grenade fuse and flight")
 	_check(not player.try_throw_grenade(), "grenades cannot be thrown while paused")
-	world._resume()
+	world.resume_run()
 	await _frames(110)
-	_check(world.kills == 2, "timed explosion kills multiple enemies in its radius")
+	_check(world.session.kills == 2, "timed explosion kills multiple enemies in its radius")
 	_check(outside.health == outside.max_health, "explosion leaves distant enemies unharmed")
 	_check(player.health == player.max_health, "grenades do not cause self damage")
 	_check(get_nodes_in_group("grenades").is_empty(), "exploded grenade cleans up after its visual effect")
 	await _clear_enemies()
 	var near: Node3D = _stationary_enemy("brute", Vector3(1, 0, 0))
-	var direct: Node3D = world.spawn_grenade(Vector3(0, 0.18, 0), Vector3.RIGHT)
+	var direct: Node3D = world.session.combat.spawn_grenade(Vector3(0, 0.18, 0), Vector3.RIGHT)
 	direct.detonate()
 	var remaining_health: float = near.health
 	direct.detonate()
@@ -359,12 +475,12 @@ func _test_grenades() -> void:
 	await _clear_enemies()
 	var covered: Node3D = _stationary_enemy("walker", Vector3(7, 0, -9))
 	await _frames(2)
-	world.detonate_grenade(Vector3(7, 0.18, -4), 160.0, 7.0)
+	world.session.combat.detonate_grenade(Vector3(7, 0.18, -4), 160.0, 7.0)
 	_check(covered.health == covered.max_health, "solid cover blocks grenade blast")
-	var bouncing: Node3D = world.spawn_grenade(Vector3(17.3, 0.95, 0), Vector3.RIGHT)
+	var bouncing: Node3D = world.session.combat.spawn_grenade(Vector3(17.3, 0.95, 0), Vector3.RIGHT)
 	await _frames(8)
 	_check(bouncing.position.x < 17.8 and bouncing.velocity.x < 0, "grenade bounces from arena boundary")
-	world._clear_projectiles()
+	world.session.combat.clear_projectiles()
 	await _frames(2)
 	_check(get_nodes_in_group("grenades").is_empty(), "wave cleanup removes unexploded grenades")
 	player.grenades = 0
@@ -372,47 +488,47 @@ func _test_grenades() -> void:
 	_check(not player.try_throw_grenade() and player.grenades == 0, "empty inventory cannot throw or become negative")
 	for supply in [[0, 2], [1, 3], [3, 4], [4, 4]]:
 		player.grenades = supply[0]
-		world._start_wave()
+		world.session.waves.start_next_wave()
 		_check(player.grenades == supply[1], "wave adds two grenades capped at four from inventory %d" % supply[0])
 	await _fresh_run()
-	_check(world.player.grenades == 2 and get_nodes_in_group("grenades").is_empty(), "restart resets stock to first-wave allowance and clears grenades")
+	_check(world.session.player.grenades == 2 and get_nodes_in_group("grenades").is_empty(), "restart resets stock to first-wave allowance and clears grenades")
 	print("Integration: grenade input, flight, fuse, pause, blast, cover, cleanup and replenishment checked")
 
 
 func _test_progression() -> void:
-	world._start_run()
-	world.player.set_physics_process(false)
-	world.player.invulnerability = 1000.0
+	world.start_run()
+	world.session.player.set_physics_process(false)
+	world.session.player.invulnerability = 1000.0
 	await _frames(2)
 	for expected_wave in range(1, 9):
-		_check(world.wave == expected_wave, "wave advances in sequence: %d" % expected_wave)
-		_check(world.player.grenades == mini(4, expected_wave * 2), "actual wave transition replenishes grenades with a hard cap")
-		while world.spawn_left > 0:
-			world._spawn_next()
+		_check(world.session.waves.wave == expected_wave, "wave advances in sequence: %d" % expected_wave)
+		_check(world.session.player.grenades == mini(4, expected_wave * 2), "actual wave transition replenishes grenades with a hard cap")
+		while world.session.waves.spawn_left > 0:
+			world.session.waves.spawn_next()
 		var expected_enemies: int = 9 + expected_wave * 5 + (1 if expected_wave in [4, 8] else 0)
-		_check(world._living_enemies() == expected_enemies, "wave %d schedules complete population including bosses" % expected_wave)
-		world.spawn_enemy_bullet(Vector3(16, 0.8, 16), Vector3.LEFT, 1.0, 1.0)
+		_check(world.session.enemies.living_count() == expected_enemies, "wave %d schedules complete population including bosses" % expected_wave)
+		world.session.combat.spawn_enemy_bullet(Vector3(16, 0.8, 16), Vector3.LEFT, 1.0, 1.0)
 		for enemy in get_nodes_in_group("enemies"):
-			if enemy.get_parent() == world.runtime:
+			if enemy.get_parent() == world.session.enemies:
 				enemy.take_damage(100000.0)
 		await _frames(4)
 		_check(get_nodes_in_group("projectiles").is_empty(), "wave end clears hostile projectiles")
 		if expected_wave < 8:
-			_check(world.mode == "upgrades" and paused, "cleared wave pauses for upgrade choice")
-			var damage_before: float = world.player.damage_multiplier
-			world._choose_upgrade("damage")
-			_check(world.mode == "playing" and not paused and world.player.damage_multiplier > damage_before, "upgrade choice applies and resumes intermission")
-			world.intermission = 0.01
+			_check(world.mode == world.Mode.UPGRADES and paused, "cleared wave pauses for upgrade choice")
+			var damage_before: float = world.session.player.damage_multiplier
+			world.choose_upgrade("damage")
+			_check(world.mode == world.Mode.PLAYING and not paused and world.session.player.damage_multiplier > damage_before, "upgrade choice applies and resumes intermission")
+			world.session.waves.intermission = 0.01
 			await _frames(3)
-	_check(world.mode == "victory" and paused and world.wave == 8, "eighth cleared wave ends in victory")
-	_check(world.kills == 254 and world.score > 0, "complete run rewards all 254 scheduled enemies")
-	world._start_run()
+	_check(world.mode == world.Mode.VICTORY and paused and world.session.waves.wave == 8, "eighth cleared wave ends in victory")
+	_check(world.session.kills == 254 and world.session.score > 0, "complete run rewards all 254 scheduled enemies")
+	world.start_run()
 	await _frames(2)
-	_check(world.mode == "playing" and world.wave == 1 and world.kills == 0 and world.player.health == 100.0, "restart creates clean survivor and score after victory")
-	world.player.invulnerability = 0.0
-	world.player.take_damage(10000.0)
-	_check(world.mode == "dead" and paused, "fatal damage ends and pauses run")
-	world._start_run()
+	_check(world.mode == world.Mode.PLAYING and world.session.waves.wave == 1 and world.session.kills == 0 and world.session.player.health == 100.0, "restart creates clean survivor and score after victory")
+	world.session.player.invulnerability = 0.0
+	world.session.player.take_damage(10000.0)
+	_check(world.mode == world.Mode.DEAD and paused, "fatal damage ends and pauses run")
+	world.start_run()
 	await _frames(2)
-	_check(world.mode == "playing" and not paused and world.player.health == 100.0 and world.score == 0, "restart after death resets run")
+	_check(world.mode == world.Mode.PLAYING and not paused and world.session.player.health == 100.0 and world.session.score == 0, "restart after death resets run")
 	print("Integration: all eight waves, upgrades, victory, death and restart checked")

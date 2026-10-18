@@ -1,0 +1,277 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/hud.gd" id="1_facade"]
+[ext_resource type="Script" path="res://scripts/ui/gameplay_hud.gd" id="2_gameplay"]
+[ext_resource type="Script" path="res://scripts/ui/hud_feedback.gd" id="3_feedback"]
+[ext_resource type="Script" path="res://scripts/ui/menu_screens.gd" id="4_menus"]
+
+[node name="GameHUD" type="CanvasLayer"]
+process_mode = 3
+layer = 10
+script = ExtResource("1_facade")
+
+[node name="GameplayHUD" type="Control" parent="."]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_gameplay")
+
+[node name="TopBar" type="HBoxContainer" parent="GameplayHUD"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 28.0
+offset_top = 24.0
+offset_right = -28.0
+grow_horizontal = 2
+theme_override_constants/separation = 18
+
+[node name="IdentityPanel" type="PanelContainer" parent="GameplayHUD/TopBar"]
+layout_mode = 2
+
+[node name="Identity" type="VBoxContainer" parent="GameplayHUD/TopBar/IdentityPanel"]
+layout_mode = 2
+theme_override_constants/separation = 1
+
+[node name="BrandLabel" type="Label" parent="GameplayHUD/TopBar/IdentityPanel/Identity"]
+layout_mode = 2
+text = "DEAD SHIFT"
+
+[node name="StatusLabel" type="Label" parent="GameplayHUD/TopBar/IdentityPanel/Identity"]
+layout_mode = 2
+text = "CONTENCIÓN // EN CURSO"
+
+[node name="ScoreSpacing" type="Control" parent="GameplayHUD/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="WavePanel" type="PanelContainer" parent="GameplayHUD/TopBar"]
+layout_mode = 2
+
+[node name="WaveStats" type="VBoxContainer" parent="GameplayHUD/TopBar/WavePanel"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="WaveLabel" type="Label" parent="GameplayHUD/TopBar/WavePanel/WaveStats"]
+layout_mode = 2
+text = "OLEADA 01 / 08"
+
+[node name="EnemiesLabel" type="Label" parent="GameplayHUD/TopBar/WavePanel/WaveStats"]
+layout_mode = 2
+text = "HOSTILES  0"
+
+[node name="ScorePanel" type="PanelContainer" parent="GameplayHUD/TopBar"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+
+[node name="ScoreStats" type="VBoxContainer" parent="GameplayHUD/TopBar/ScorePanel"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="ScoreLabel" type="Label" parent="GameplayHUD/TopBar/ScorePanel/ScoreStats"]
+layout_mode = 2
+text = "000000"
+
+[node name="TimeLabel" type="Label" parent="GameplayHUD/TopBar/ScorePanel/ScoreStats"]
+layout_mode = 2
+text = "TIEMPO  00:00"
+
+[node name="BottomBar" type="HBoxContainer" parent="GameplayHUD"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 28.0
+offset_top = -116.0
+offset_right = -28.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 20
+
+[node name="SurvivalPanel" type="PanelContainer" parent="GameplayHUD/BottomBar"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+
+[node name="SurvivalStats" type="VBoxContainer" parent="GameplayHUD/BottomBar/SurvivalPanel"]
+layout_mode = 2
+theme_override_constants/separation = 7
+
+[node name="HealthLabel" type="Label" parent="GameplayHUD/BottomBar/SurvivalPanel/SurvivalStats"]
+layout_mode = 2
+text = "INTEGRIDAD  100 / 100"
+
+[node name="HealthBar" type="ProgressBar" parent="GameplayHUD/BottomBar/SurvivalPanel/SurvivalStats"]
+custom_minimum_size = Vector2(250, 10)
+layout_mode = 2
+mouse_filter = 2
+max_value = 1.0
+value = 1.0
+show_percentage = false
+
+[node name="DashRow" type="HBoxContainer" parent="GameplayHUD/BottomBar/SurvivalPanel/SurvivalStats"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="DashLabel" type="Label" parent="GameplayHUD/BottomBar/SurvivalPanel/SurvivalStats/DashRow"]
+layout_mode = 2
+text = "ESQUIVA LISTA"
+
+[node name="DashBar" type="ProgressBar" parent="GameplayHUD/BottomBar/SurvivalPanel/SurvivalStats/DashRow"]
+custom_minimum_size = Vector2(95, 5)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+mouse_filter = 2
+max_value = 1.0
+value = 1.0
+show_percentage = false
+
+[node name="ObjectiveColumn" type="VBoxContainer" parent="GameplayHUD/BottomBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+alignment = 2
+
+[node name="ObjectiveLabel" type="Label" parent="GameplayHUD/BottomBar/ObjectiveColumn"]
+layout_mode = 2
+text = "ELIMINA LA HORDA"
+horizontal_alignment = 1
+
+[node name="GrenadesLabel" type="Label" parent="GameplayHUD/BottomBar/ObjectiveColumn"]
+layout_mode = 2
+text = "GRANADAS  2 / 4  ·  G / CLIC DER. / B"
+horizontal_alignment = 1
+
+[node name="ControlsHint" type="Label" parent="GameplayHUD/BottomBar/ObjectiveColumn"]
+layout_mode = 2
+text = "ESPACIO · ESQUIVAR     Q · ARMA     ESC · PAUSA"
+horizontal_alignment = 1
+
+[node name="WeaponPanel" type="PanelContainer" parent="GameplayHUD/BottomBar"]
+custom_minimum_size = Vector2(265, 0)
+layout_mode = 2
+
+[node name="WeaponStats" type="VBoxContainer" parent="GameplayHUD/BottomBar/WeaponPanel"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="WeaponLabel" type="Label" parent="GameplayHUD/BottomBar/WeaponPanel/WeaponStats"]
+layout_mode = 2
+text = "PISTOLA"
+
+[node name="AmmoLabel" type="Label" parent="GameplayHUD/BottomBar/WeaponPanel/WeaponStats"]
+layout_mode = 2
+text = "12 / 12"
+
+[node name="ReloadBar" type="ProgressBar" parent="GameplayHUD/BottomBar/WeaponPanel/WeaponStats"]
+custom_minimum_size = Vector2(225, 5)
+layout_mode = 2
+mouse_filter = 2
+max_value = 1.0
+value = 1.0
+show_percentage = false
+
+[node name="HudFeedback" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("3_feedback")
+
+[node name="Banner" type="VBoxContainer" parent="HudFeedback"]
+visible = false
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -340.0
+offset_top = 132.0
+offset_right = 340.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="TitleLabel" type="Label" parent="HudFeedback/Banner"]
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="HudFeedback/Banner"]
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="DamageFlash" type="ColorRect" parent="HudFeedback"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.9, 0.12, 0.12, 0)
+
+[node name="MenuScreens" type="Control" parent="."]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("4_menus")
+
+[node name="ModalShade" type="ColorRect" parent="MenuScreens"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.025, 0.055, 0.075, 0.94)
+
+[node name="AccentLine" type="ColorRect" parent="MenuScreens"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 4.0
+grow_horizontal = 2
+mouse_filter = 2
+color = Color(0.407843, 0.898039, 0.819608, 1)
+
+[node name="DivisionStamp" type="Label" parent="MenuScreens"]
+layout_mode = 0
+offset_left = 38.0
+offset_top = 28.0
+text = "NIGHT OPERATIONS DIVISION  /  SECTOR 07"
+
+[node name="Footer" type="Label" parent="MenuScreens"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 38.0
+offset_top = -44.0
+offset_bottom = -20.0
+grow_vertical = 0
+text = "PROTOTIPO 3D  ·  SOBREVIVE. ADÁPTATE. CONTÉN."
+
+[node name="ContentCenter" type="CenterContainer" parent="MenuScreens"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+offset_top = 64.0
+offset_right = -32.0
+offset_bottom = -64.0
+grow_horizontal = 2
+grow_vertical = 2

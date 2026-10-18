@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/arena.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/world/horde_navigation.gd" id="2"]
+
+[node name="Arena" type="Node3D"]
+script = ExtResource("1")
+
+[node name="Navigation" type="Node" parent="."]
+process_mode = 1
+script = ExtResource("2")
+
+[node name="Ground" type="Node3D" parent="."]
+
+[node name="Perimeter" type="Node3D" parent="."]
+
+[node name="Cover" type="Node3D" parent="."]
+
+[node name="Markings" type="Node3D" parent="."]

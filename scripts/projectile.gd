@@ -2,6 +2,8 @@ class_name Bullet
 extends Node3D
 ## Swept rays prevent tunnelling even at high projectile speed or low framerates.
 
+signal impact_requested(at: Vector3, color: Color, count: int)
+
 var direction := Vector3.FORWARD
 var damage: float = 10.0
 var speed: float = 30.0
@@ -59,7 +61,7 @@ func _physics_process(delta: float) -> void:
 		return
 	var start: Vector3 = global_position
 	var end: Vector3 = start + direction * speed * delta
-	var mask: int = 6 if friendly else 3
+	var mask: int = GameRules.WALL_LAYER | (GameRules.ENEMY_LAYER if friendly else GameRules.PLAYER_LAYER)
 	# Repeat after penetration, excluding each struck body exactly once.
 	for attempt: int in range(16):
 		var query := PhysicsRayQueryParameters3D.create(start, end, mask, _excluded)
@@ -88,6 +90,4 @@ func _physics_process(delta: float) -> void:
 
 
 func _impact(point: Vector3, color: Color, count: int) -> void:
-	var world: Node = get_tree().current_scene
-	if world.has_method("spawn_particles"):
-		world.call("spawn_particles", point, color, count)
+	impact_requested.emit(point, color, count)

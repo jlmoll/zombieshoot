@@ -39,6 +39,8 @@ El movimiento y la puntería son independientes. La esquiva concede invulnerabil
 
 ## Comprobación de integración
 
+En una copia nueva, importa primero las escenas y clases con `godot --headless --path . --editor --quit`.
+
 ```powershell
 godot --headless --path . -- --smoke-test
 ```
@@ -52,3 +54,9 @@ godot --headless --path . --fixed-fps 60 --script tests/integration.gd
 ```
 
 Las pruebas preservan el archivo de récord y ajustes previo. La partida usa el renderizador Compatibility para reducir requisitos de GPU y no necesita descargas ni plugins.
+
+## Organización del proyecto
+
+La escena principal coordina nodos independientes para arena, navegación, cámara, audio, guardado e interfaz. `RunSession` contiene todos los nodos transitorios de una partida: actores, combate, suministros, efectos y oleadas. Los actores emiten señales y reciben sus dependencias; sus meshes y animaciones viven en hijos `Visuals`.
+
+Consulta [la arquitectura y los puntos de extensión](docs/architecture.md) para ver el árbol de escenas, las responsabilidades y el ciclo de vida.

@@ -2,6 +2,8 @@ class_name Grenade
 extends CharacterBody3D
 ## Timed, bouncing projectile. Its fuse and effects follow the gameplay pause.
 
+signal detonated(at: Vector3, damage: float, radius: float)
+
 const FUSE: float = 1.2
 const BLAST_RADIUS: float = 4.2
 const DAMAGE: float = 160.0
@@ -25,7 +27,7 @@ func configure(origin: Vector3, direction: Vector3, distance: float = 9.0) -> vo
 func _ready() -> void:
 	add_to_group("grenades")
 	collision_layer = 0
-	collision_mask = 2
+	collision_mask = GameRules.WALL_LAYER
 	motion_mode = CharacterBody3D.MOTION_MODE_FLOATING
 	var collision := CollisionShape3D.new()
 	var shape := SphereShape3D.new()
@@ -73,8 +75,9 @@ func _physics_process(delta: float) -> void:
 		velocity = velocity.bounce(collision.get_normal()) * 0.45
 	# The low visual perimeter must contain grenades even at the top of the arc.
 	for axis in [0, 2]:
-		if absf(position[axis]) > 17.8:
-			position[axis] = clampf(position[axis], -17.8, 17.8)
+		var limit: float = GameRules.ARENA_HALF_SIZE - 0.2
+		if absf(position[axis]) > limit:
+			position[axis] = clampf(position[axis], -limit, limit)
 			velocity[axis] = -signf(position[axis]) * absf(velocity[axis]) * 0.45
 	if position.y < FLOOR_HEIGHT:
 		position.y = FLOOR_HEIGHT
@@ -100,7 +103,7 @@ func detonate() -> void:
 	exploded = true
 	set_physics_process(false)
 	_model.hide()
-	get_tree().current_scene.detonate_grenade(global_position, DAMAGE, BLAST_RADIUS)
+	detonated.emit(global_position, DAMAGE, BLAST_RADIUS)
 	_ring.scale = Vector3(0.15, 0.12, 0.15)
 	_ring_material.albedo_color = Color(1.0, 0.8, 0.4, 1.0)
 	var tween: Tween = create_tween().set_parallel(true)
