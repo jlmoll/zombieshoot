@@ -1,0 +1,19 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/spawn_zone.gd" id="1_n8eeo"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_anbwx"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.2, 0.95, 0.8, 0.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_4tg8d"]
+material = SubResource("StandardMaterial3D_anbwx")
+size = Vector3(1, 0.06, 0.18)
+
+[node name="EnemyEntrance" type="Marker3D" unique_id=2063041663]
+script = ExtResource("1_n8eeo")
+
+[node name="WidthPreview" type="MeshInstance3D" parent="." unique_id=332679298]
+visible = false
+mesh = SubResource("BoxMesh_4tg8d")

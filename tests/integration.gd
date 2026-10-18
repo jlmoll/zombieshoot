@@ -545,7 +545,20 @@ func _test_map_authoring() -> void:
 	_check(tiles.get_used_cells().size() == 144 and map.get_node("Ground").get_child_count() == 2, "floor cells replace individual tile nodes")
 	_check(tiles.get_cell_item(Vector3i(-6, 0, -6)) == 0 and tiles.get_cell_item(Vector3i(-6, 0, -5)) == 1, "GridMap preserves the original checkerboard layout")
 
-	var cover := map.get_node("Cover/Cover") as Node3D
+	_check(not map.has_node("Markings") and not map.has_node("Perimeter"), "map has no loose markings or perimeter detail containers")
+	_check(map.get_node("Props/HazardPanel1").scene_file_path.ends_with("hazard_panel.tscn"), "hazard panel is one reusable prop")
+	_check(map.get_node("Props/HazardPanel1").get_child_count() == 0, "hazard stripes are merged into one mesh")
+	_check(map.get_node("Props/SectorSign").scene_file_path.ends_with("sector_sign.tscn"), "sector sign is a complete editable prop")
+	_check(map.get_node("Environment").scene_file_path.ends_with("map_environment.tscn"), "lighting is encapsulated in a reusable environment scene")
+	var structure := map.get_node("Structure") as GridMap
+	_check(structure != null and structure.mesh_library.get_item_list().size() == 5, "structure is paintable with collidable illuminated wall modules")
+	structure.set_cell_item(Vector3i(1, 0, 1), 0)
+	map.rebuild_navigation()
+	_check(not nav.is_walkable(Vector3(4.5, 0, 2.6)), "navigation reads collision shapes from painted structure cells")
+	structure.set_cell_item(Vector3i(1, 0, 1), -1)
+	map.rebuild_navigation()
+	_check(nav.is_walkable(Vector3(4.5, 0, 2.6)), "erasing structure cells frees their navigation footprint")
+	var cover := map.get_node("Props/Barricade1") as Node3D
 	_check(cover.scene_file_path.ends_with("barricade.tscn"), "map cover is an editable reusable scene instance")
 	var old_center := cover.global_position
 	_check(not nav.is_walkable(old_center), "navigation derives blocked cells from authored cover")
@@ -558,7 +571,7 @@ func _test_map_authoring() -> void:
 	rng.seed = 42
 	for zone: SpawnZone in map.spawn_container.get_children():
 		zone.enabled = false
-	var entrance := map.spawn_container.get_node("North") as SpawnZone
+	var entrance := map.spawn_container.get_node("NorthEntrance") as SpawnZone
 	entrance.enabled = true
 	entrance.width = 0
 	entrance.global_position = Vector3(4, 0, 0)
@@ -594,6 +607,6 @@ func _test_map_authoring() -> void:
 	_check(nav.is_walkable(map.player_spawn.global_position), "navigation supports translated and rotated map roots")
 	_check(not nav.is_walkable(cover.global_position), "collision footprints follow transformed map roots")
 	await _fresh_run()
-	_check(world.arena.get_node("Cover/Cover").position == Vector3(-7, 0.8, -6), "restart restores authored map geometry")
+	_check(world.arena.get_node("Props/Barricade1").position == Vector3(-7, 0.8, -6), "restart restores authored map geometry")
 	_check(world.session.player.global_position == world.arena.player_spawn.global_position, "survivor starts at map marker")
 	print("Integration: editable geometry, rotated collisions, map bounds, spawn filtering and map reset checked")

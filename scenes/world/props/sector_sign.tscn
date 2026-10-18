@@ -1,0 +1,38 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/sector_sign.gd" id="1_4g5qp"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_43qr8"]
+albedo_color = Color(0.3019608, 0.46666667, 0.47843137, 1)
+roughness = 0.85
+emission_enabled = true
+emission = Color(0.3019608, 0.46666667, 0.47843137, 1)
+emission_energy_multiplier = 0.7
+
+[sub_resource type="TorusMesh" id="TorusMesh_dn1iq"]
+inner_radius = 3.9
+outer_radius = 3.96
+
+[node name="SectorSign" type="Node3D" unique_id=1182576144]
+script = ExtResource("1_4g5qp")
+
+[node name="Ring" type="MeshInstance3D" parent="." unique_id=1562479783]
+transform = Transform3D(1, 0, 0, 0, 0.15, 0, 0, 0, 1, 0, 0.015, 0)
+material_override = SubResource("StandardMaterial3D_43qr8")
+mesh = SubResource("TorusMesh_dn1iq")
+
+[node name="Number" type="Label3D" parent="." unique_id=2121472406]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0.025, 0)
+pixel_size = 0.057291668
+modulate = Color(0.35686275, 0.47843137, 0.49019608, 1)
+text = "07"
+font_size = 96
+outline_size = 0
+
+[node name="Caption" type="Label3D" parent="." unique_id=781051339]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0.028, 3.3)
+pixel_size = 0.00625
+modulate = Color(0.39215687, 0.5294118, 0.5411765, 1)
+text = "CONTENCIÓN  /  SECTOR"
+font_size = 96
+outline_size = 0

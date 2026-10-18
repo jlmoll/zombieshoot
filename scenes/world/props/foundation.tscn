@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wy762"]
+albedo_color = Color(0.06666667, 0.12156863, 0.16470589, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="BoxMesh_d3kjj"]
+size = Vector3(38, 0.8, 38)
+
+[node name="Foundation" type="MeshInstance3D" unique_id=1821881381]
+material_override = SubResource("StandardMaterial3D_wy762")
+mesh = SubResource("BoxMesh_d3kjj")

@@ -33,7 +33,7 @@ DeadShift (Game)
 └── AimCursor                Presentación del cursor según el estado
 ```
 
-Los nodos y widgets permanentes se declaran en `.tscn`. La geometría de la arena se guarda en la escena, con piezas reutilizables en `scenes/world/pieces/`. Los modelos de actores mantienen sus propios nodos de presentación.
+Los nodos y widgets permanentes se declaran en `.tscn`. La geometría de la arena se guarda en la escena: suelo y estructura en GridMaps; props, entorno y entradas en escenas reutilizables de `scenes/world/`. Los modelos de actores mantienen sus propios nodos de presentación.
 
 ## Responsabilidades y dependencias
 
@@ -72,7 +72,7 @@ Los grupos `player`, `enemies`, `projectiles` y `grenades` sirven para inspecci�
 - **Armas y control del jugador:** `scripts/player.gd`; aspecto en `scripts/actors/player_visuals.gd`.
 - **Granadas y balas:** `scripts/grenade.gd`, `scripts/projectile.gd` y resolución de daño en `CombatService`.
 - **Mejoras y reglas compartidas:** `scripts/core/game_rules.gd`.
-- **Cobertura y suelo:** escena `scenes/world/arena.tscn` y `scripts/world/arena.gd`.
+- **Mapas, estructura y props:** escena `scenes/world/arena.tscn` y `scripts/world/arena.gd`.
 - **Interfaz:** `scenes/ui/hud.tscn` y los scripts de `scripts/ui/`.
 - **Suministros:** `scenes/gameplay/supply_pickup.tscn` y su script.
 

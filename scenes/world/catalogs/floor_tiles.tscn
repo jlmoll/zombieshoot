@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tjriy"]
+albedo_color = Color(0.14901961, 0.22745098, 0.25882354, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="BoxMesh_8l4pw"]
+material = SubResource("StandardMaterial3D_tjriy")
+size = Vector3(2.96, 0.12, 2.96)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_eftgg"]
+albedo_color = Color(0.16470589, 0.24313726, 0.27058825, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="BoxMesh_oaw6v"]
+material = SubResource("StandardMaterial3D_eftgg")
+size = Vector3(2.96, 0.12, 2.96)
+
+[node name="TileCatalog" type="Node3D" unique_id=349476190]
+
+[node name="Suelo_oscuro" type="MeshInstance3D" parent="." unique_id=315953489]
+mesh = SubResource("BoxMesh_8l4pw")
+
+[node name="Suelo_claro" type="MeshInstance3D" parent="." unique_id=1522469771]
+mesh = SubResource("BoxMesh_oaw6v")
