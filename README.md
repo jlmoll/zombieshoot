@@ -1,0 +1,52 @@
+# Dead Shift — Contención
+
+Dual stick shooter 3D con cámara isométrica, hecho en **Godot 4.7.2**. Sobrevive a ocho oleadas de zombis y derrota a los jefes de las oleadas cuatro y ocho. Todos los personajes, decorados, efectos y sonidos se generan por código; los recursos visuales son deliberadamente prototípicos.
+
+## Jugar
+
+Abre `project.godot` con Godot 4.7 y pulsa **F5**. También puedes ejecutar el proyecto desde consola:
+
+```powershell
+godot --path .
+```
+
+| Acción | Teclado y ratón | Mando |
+| --- | --- | --- |
+| Moverse | WASD | Stick izquierdo |
+| Apuntar | Ratón | Stick derecho |
+| Disparar | Mantener clic izquierdo | Stick derecho inclinado, RT o RB |
+| Esquivar | Espacio | A o LB |
+| Recargar | R | X |
+| Cambiar arma | Q, rueda o 1–3 | Y |
+| Pausa / continuar | Esc o P | Start |
+| Navegar menús | Flechas y Enter, o ratón | Cruceta / stick y A |
+| Pantalla completa | F11 | — |
+| Silenciar sonido | M o botón del menú | Botón del menú |
+
+El movimiento y la puntería son independientes. La esquiva concede invulnerabilidad breve y tiene tiempo de recuperación. Las armas recargan automáticamente al vaciarse; también puedes anticipar la recarga con R/X.
+
+## Mecánicas
+
+- Pistola, escopeta de perdigones y subfusil, cada uno con cargador, cadencia, dispersión y recarga propios.
+- Zombis básicos, corredores, brutos, escupidores y jefes con ataques telegrafiados y proyectiles.
+- Navegación alrededor de obstáculos, separación de la horda y colisiones con el escenario.
+- Una elección de tres mejoras entre oleadas, recuperación parcial y suministros de vida y munición.
+- Puntuación, récord y preferencia de sonido persistentes.
+- Menú inicial, pausa, selección de mejoras, derrota, victoria y reinicio de partida.
+- Pausa automática al perder el foco, sonido procedural, retroceso visual, partículas e indicadores de daño.
+
+## Comprobación de integración
+
+```powershell
+godot --headless --path . -- --smoke-test
+```
+
+El modo de comprobación crea una partida real en el motor y verifica enemigos, proyectiles, daño, curación, mejoras, suministros y pausa. No requiere recursos externos ni complementos.
+
+La suite completa comprueba física real, armas, mejoras, navegación, ataques y el ciclo de ocho oleadas, con victoria, derrota y reinicio:
+
+```powershell
+godot --headless --path . --fixed-fps 60 --script tests/integration.gd
+```
+
+Las pruebas preservan el archivo de récord y ajustes previo. La partida usa el renderizador Compatibility para reducir requisitos de GPU y no necesita descargas ni plugins.
