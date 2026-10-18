@@ -169,7 +169,7 @@ func _physics_process(delta: float) -> void:
 		trigger_firing = Input.get_joy_axis(pad, JOY_AXIS_TRIGGER_RIGHT) > 0.25 or Input.is_joy_button_pressed(pad, JOY_BUTTON_RIGHT_SHOULDER)
 	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or stick_firing or trigger_firing:
 		try_shoot()
-	visuals.animate(delta, aim_direction, velocity.length(), invulnerability, dash_remaining)
+	visuals.animate(delta, aim_direction, velocity.length(), invulnerability, dash_remaining, velocity.normalized(), reloading, 1.0 - reload_left / maxf(reload_duration, 0.01))
 	_hud_tick -= delta
 	if _hud_tick <= 0.0:
 		_hud_tick = 0.08
@@ -231,7 +231,7 @@ func _update_aim() -> void:
 			var origin: Vector3 = camera.project_ray_origin(cursor)
 			var ray: Vector3 = camera.project_ray_normal(cursor)
 			if absf(ray.y) > 0.0001:
-				var hit: Vector3 = origin + ray * ((0.85 - origin.y) / ray.y)
+				var hit: Vector3 = origin + ray * ((visuals.get_muzzle_position().y - origin.y) / ray.y)
 				var offset: Vector3 = hit - global_position
 				offset.y = 0.0
 				if offset.length_squared() > 0.04:
@@ -280,9 +280,10 @@ func try_shoot() -> void:
 	ammo -= 1
 	weapon["ammo"] = ammo
 	_fire_left = float(weapon["interval"]) / fire_rate_multiplier
-	var origin: Vector3 = global_position + Vector3.UP * 0.85 + aim_direction * 0.86
+	visuals.set_aim(aim_direction)
+	var origin: Vector3 = visuals.get_muzzle_position()
 	# Keep the muzzle on this side of cover when the weapon visually overlaps it.
-	var muzzle_query := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * 0.85, origin, 2)
+	var muzzle_query := PhysicsRayQueryParameters3D.create(Vector3(global_position.x, origin.y, global_position.z), origin, 2)
 	var muzzle_hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(muzzle_query)
 	if not muzzle_hit.is_empty():
 		origin = (muzzle_hit["position"] as Vector3) - aim_direction * 0.03
@@ -355,6 +356,7 @@ func take_damage(amount: float) -> void:
 	if health <= 0.0:
 		_alive = false
 		velocity = Vector3.ZERO
+		visuals.play_death()
 		died.emit()
 
 

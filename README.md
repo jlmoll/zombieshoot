@@ -91,3 +91,9 @@ de 1 cm para la optimización de animaciones del importador. El exportador regen
 
 `godot --path . --script tools/preview_zombie_godot.gd` genera capturas cercanas de
 la pose base y los cuatro clips en `assets/models/qa_godot_*.png` para inspección.
+
+## Protagonista Blender
+
+La técnica industrial animada sustituye al prototipo. Incluye movimiento y apuntado
+independientes, tres armas, recarga al caminar y caída al morir. Consulta
+[fuentes, regeneración y validación visual](docs/player_technician.md).
