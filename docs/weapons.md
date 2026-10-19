@@ -75,8 +75,8 @@ Para cambiar únicamente la distribución de proyectiles, sustituye el script de
 ## Validación
 
 ```text
-godot --headless --path . --fixed-fps 60 --script tests/weapons.gd
-godot --headless --path . --fixed-fps 60 --script tests/player_presentation.gd
+godot --headless --path . --fixed-fps 60 --script tests/weapons/weapons.gd
+godot --headless --path . --fixed-fps 60 --script tests/player/player_presentation.gd
 godot --headless --path . --fixed-fps 60 --script tests/integration.gd
 ```
 

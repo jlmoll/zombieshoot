@@ -39,6 +39,14 @@ El movimiento y la puntería son independientes. La esquiva concede invulnerabil
 
 ## Comprobación de integración
 
+Para ejecutar todas las pruebas e importar el proyecto en un solo comando:
+
+```powershell
+./tools/test_all.ps1 -Godot 'C:/ruta/godot.exe'
+```
+
+Consulta [las suites por sistema y sus logs](tests/README.md).
+
 En una copia nueva, importa primero las escenas y clases con `godot --headless --path . --editor --quit`.
 
 ```powershell
@@ -80,7 +88,7 @@ Los materiales se personalizan en Blender y las paletas por tipo en
 `scripts/actors/enemy_visuals.gd`.
 
 La comprobación específica de animaciones se ejecuta con:
-`godot --headless --path . --fixed-fps 60 --script tests/enemy_animation.gd`.
+`godot --headless --path . --fixed-fps 60 --script tests/enemies/enemy_animation.gd`.
 
 ### Validación visual y de proporciones del zombi
 
@@ -88,7 +96,7 @@ La comprobación específica de animaciones se ejecuta con:
 completas de los siete pivotes en cada clip. Evita la pérdida de traslaciones
 constantes que deformaba el personaje al exportar las pistas NLA.
 
-`godot --headless --path . --script tests/enemy_model_fidelity.gd` compara 444
+`godot --headless --path . --script tests/enemies/enemy_model_fidelity.gd` compara 444
 posiciones de piezas importadas con muestras evaluadas en Blender, con tolerancia
 de 1 cm para la optimización de animaciones del importador. El exportador regenera
 `tests/fixtures/blocky_blender_reference.json` desde el archivo Blender.

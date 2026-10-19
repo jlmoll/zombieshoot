@@ -63,7 +63,7 @@ Para movimiento, apuntado y disparo sostenido se leen las intensidades de Input 
 ## Validación
 
 ```text
-godot --headless --path . --fixed-fps 60 --script tests/input_profiles.gd
+godot --headless --path . --fixed-fps 60 --script tests/input/input_profiles.gd
 godot --headless --path . --fixed-fps 60 --script tests/integration.gd
 ```
 

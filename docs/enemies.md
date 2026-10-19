@@ -6,7 +6,7 @@ El GLB original mira hacia +Z local: nariz, ojos y brazos están en ese lado. La
 
 La base actual no gira el modelo importado. La orientación se calcula con `atan2(facing.x, facing.z)`, usando la misma convención +Z que el personaje y las armas. Los enemigos de persecución miran en la dirección de su ruta. El spitter mantiene la mirada al objetivo cuando se retira y reproduce Walk en sentido inverso. Un ataque o una muerte restablecen la reproducción positiva.
 
-No se ha modificado el GLB ni su fuente Blender. `tests/enemy_model_fidelity.gd` sigue comprobando las 444 posiciones de mallas contra la referencia exportada de Blender.
+No se ha modificado el GLB ni su fuente Blender. `tests/enemies/enemy_model_fidelity.gd` sigue comprobando las 444 posiciones de mallas contra la referencia exportada de Blender.
 
 ## Escenas
 
@@ -73,9 +73,9 @@ Para ampliar un ataque cambia los valores de su nodo. Si necesita una mecánica 
 ## Validación
 
 ```text
-godot --headless --path . --fixed-fps 60 --script tests/enemies.gd
-godot --headless --path . --fixed-fps 60 --script tests/enemy_animation.gd
-godot --headless --path . --script tests/enemy_model_fidelity.gd
+godot --headless --path . --fixed-fps 60 --script tests/enemies/enemies.gd
+godot --headless --path . --fixed-fps 60 --script tests/enemies/enemy_animation.gd
+godot --headless --path . --script tests/enemies/enemy_model_fidelity.gd
 godot --headless --path . --fixed-fps 60 --script tests/integration.gd
 ```
 

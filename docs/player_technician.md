@@ -40,8 +40,8 @@ El primer comando reconstruye la fuente estática desde el generador. Para conse
 ediciones manuales del archivo Blender, ejecutar solo los comandos posteriores.
 
 ```text
-godot --headless --path . --script tests/player_model_fidelity.gd
-godot --headless --path . --fixed-fps 60 --script tests/player_presentation.gd
+godot --headless --path . --script tests/player/player_model_fidelity.gd
+godot --headless --path . --fixed-fps 60 --script tests/player/player_presentation.gd
 godot --headless --path . --fixed-fps 60 --script tests/integration.gd
 ```
 

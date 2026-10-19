@@ -330,7 +330,7 @@ func _test_actor_isolation() -> void:
 	local_enemy.defeated.connect(func(_enemy: Node3D) -> void: defeats[0] += 1)
 	local_enemy.take_damage(18.0)
 	local_enemy.configure_wave(2)
-	_check(local_enemy.health == local_enemy.max_health and not local_enemy.visuals.get_node("Indicators/HealthBar").visible and is_equal_approx(local_enemy.visuals._health_fill.scale.x, 0.9), "reconfiguring same enemy type resets health presentation with health state")
+	_check(local_enemy.health == local_enemy.max_health and not local_enemy.visuals.get_node("Indicators/HealthBar").visible and is_equal_approx(local_enemy.visuals.get_node("Indicators/HealthBar/Fill").scale.x, 0.9), "reconfiguring same enemy type resets health presentation with health state")
 	var score_before: int = world.session.score
 	var kills_before: int = world.session.kills
 	var bullets_before: int = world.session.combat.get_node("Projectiles").get_child_count()
@@ -486,7 +486,6 @@ func _test_grenades() -> void:
 	await _frames(2)
 	_check(get_nodes_in_group("grenades").is_empty(), "wave cleanup removes unexploded grenades")
 	player.grenades = 0
-	player._grenade_left = 0.0
 	_check(not player.try_throw_grenade() and player.grenades == 0, "empty inventory cannot throw or become negative")
 	for supply in [[0, 2], [1, 3], [3, 4], [4, 4]]:
 		player.grenades = supply[0]
@@ -595,11 +594,15 @@ func _test_map_authoring() -> void:
 	var grenade: Grenade = world.session.combat.spawn_grenade(Vector3(22, 2, 0), Vector3.RIGHT)
 	grenade.set_physics_process(false)
 	grenade.velocity = Vector3.ZERO
-	grenade._physics_process(0.001)
+	grenade.set_physics_process(true)
+	await _frames(1)
+	grenade.set_physics_process(false)
 	_check(grenade.global_position.x > 21.9, "grenades are not clamped to the old fixed arena size")
 	grenade.global_position = Vector3(26, 2, 0)
 	grenade.velocity = Vector3.RIGHT
-	grenade._physics_process(0.001)
+	grenade.set_physics_process(true)
+	await _frames(1)
+	grenade.set_physics_process(false)
 	_check(grenade.global_position.x < 25.0 and grenade.velocity.x < 0.0, "grenades bounce at the authored playable boundary")
 
 	map.position = Vector3(50, 0, 30)
