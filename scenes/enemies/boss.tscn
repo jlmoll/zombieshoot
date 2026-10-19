@@ -1,0 +1,28 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/actors/enemy.tscn" id="base"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/models/boss_details.tscn" id="details"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/attacks/slam.tscn" id="slam"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/attacks/burst.tscn" id="burst"]
+
+[node name="Boss" instance=ExtResource("base")]
+kind = "boss"
+base_health = 1100.0
+speed = 1.65
+contact_damage = 24.0
+score_value = 2500
+radius = 1
+visual_scale = 1.64
+knockback_strength = 0.8
+death_particle_count = 16
+
+[node name="Visuals" parent="." index="1"]
+skin_color = Color(0.807843137254902, 0.5607843137254902, 0.48627450980392156, 1)
+cloth_color = Color(0.5450980392156862, 0.2235294117647059, 0.27450980392156865, 1)
+always_show_health = true
+
+[node name="Details" parent="Visuals/Body/VariantDetails" instance=ExtResource("details")]
+
+[node name="Slam" parent="Combat" instance=ExtResource("slam")]
+
+[node name="Burst" parent="Combat" instance=ExtResource("burst")]

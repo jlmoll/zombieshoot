@@ -106,3 +106,7 @@ marcadores de aparición y límites configurables. Consulta la [guía de edició
 ## Armas editables
 
 Pistola, escopeta y subfusil son escenas con modelo 3D, boca de disparo y configuración propia en el inspector. Consulta [estructura, edición y extensión de armas](docs/weapons.md).
+
+## Enemigos editables
+
+Los cinco tipos heredan de una escena base con estadísticas exportadas y componen movimiento, ataques y presentación. La orientación del modelo usa +Z sin giros compensatorios. Consulta [edición y extensión de enemigos](docs/enemies.md).

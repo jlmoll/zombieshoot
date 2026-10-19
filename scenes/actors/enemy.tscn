@@ -1,32 +1,93 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/enemy.gd" id="1_enemy"]
 [ext_resource type="Script" path="res://scripts/actors/enemy_visuals.gd" id="2_visuals"]
 [ext_resource type="PackedScene" path="res://assets/models/zombie_blocky.glb" id="3_model"]
 
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_enemy"]
-resource_local_to_scene = true
-radius = 0.43
-height = 1.6
+[ext_resource type="Script" path="res://scripts/enemies/enemy_movement.gd" id="movement"]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_combat.gd" id="combat"]
 
-[node name="Enemy" type="CharacterBody3D" groups=["enemies"]]
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_35asm"]
+radius = 0.43
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_a2f0v"]
+albedo_color = Color(0.09019608, 0.14509805, 0.16862746, 1)
+roughness = 0.88
+
+[sub_resource type="BoxMesh" id="BoxMesh_ei073"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_iq6g4"]
+albedo_color = Color(0.9098039, 0.6431373, 0.42352942, 1)
+roughness = 0.88
+emission_enabled = true
+emission = Color(0.9098039, 0.6431373, 0.42352942, 1)
+emission_energy_multiplier = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gwjt0"]
+transparency = 1
+albedo_color = Color(1, 0.3, 0.12, 0.8)
+roughness = 0.88
+emission_enabled = true
+emission = Color(1, 0.3, 0.12, 0.8)
+emission_energy_multiplier = 1.8
+
+[sub_resource type="TorusMesh" id="TorusMesh_w7k3k"]
+inner_radius = 0.93
+rings = 32
+ring_segments = 6
+
+[node name="Enemy" type="CharacterBody3D" node_paths=PackedStringArray("visuals", "movement", "combat", "attack_origin") unique_id=254739376 groups=["enemies"]]
 collision_layer = 4
 collision_mask = 2
 motion_mode = 1
 script = ExtResource("1_enemy")
+visuals = NodePath("Visuals")
+movement = NodePath("Movement")
+combat = NodePath("Combat")
+attack_origin = NodePath("AttackOrigin")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-position = Vector3(0, 0.8, 0)
-shape = SubResource("CapsuleShape3D_enemy")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1955445509]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_35asm")
 
-[node name="Visuals" type="Node3D" parent="."]
+[node name="Visuals" type="Node3D" parent="." unique_id=805906062]
 script = ExtResource("2_visuals")
 
-[node name="Body" type="Node3D" parent="Visuals"]
+[node name="Body" type="Node3D" parent="Visuals" unique_id=827758473]
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 0, 0, 0)
 
-[node name="ZombieModel" parent="Visuals/Body" instance=ExtResource("3_model")]
-rotation = Vector3(0, 3.1415927, 0)
+[node name="ZombieModel" type="Node3D" parent="Visuals/Body" unique_id=1768914187 instance=ExtResource("3_model")]
 
-[node name="VariantDetails" type="Node3D" parent="Visuals/Body"]
+[node name="VariantDetails" type="Node3D" parent="Visuals/Body" unique_id=433322803]
 
-[node name="GeneratedVisuals" type="Node3D" parent="Visuals"]
+[node name="Indicators" type="Node3D" parent="Visuals" unique_id=1707239234]
+
+[node name="HealthBar" type="Node3D" parent="Visuals/Indicators" unique_id=1392339557]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.84, 0)
+visible = false
+
+[node name="Background" type="MeshInstance3D" parent="Visuals/Indicators/HealthBar" unique_id=1697924318]
+transform = Transform3D(0.95, 0, 0, 0, 0.07, 0, 0, 0, 0.09, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_a2f0v")
+mesh = SubResource("BoxMesh_ei073")
+
+[node name="Fill" type="MeshInstance3D" parent="Visuals/Indicators/HealthBar" unique_id=1237374358]
+transform = Transform3D(0.9, 0, 0, 0, 0.08, 0, 0, 0, 0.09, 0, 0, -0.012)
+material_override = SubResource("StandardMaterial3D_iq6g4")
+mesh = SubResource("BoxMesh_ei073")
+
+[node name="AttackWarning" type="MeshInstance3D" parent="Visuals/Indicators" unique_id=1844061681]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.045, 0)
+visible = false
+material_override = SubResource("StandardMaterial3D_gwjt0")
+mesh = SubResource("TorusMesh_w7k3k")
+
+[node name="Movement" type="Node" parent="."]
+script = ExtResource("movement")
+
+[node name="Combat" type="Node" parent="."]
+script = ExtResource("combat")
+
+[node name="AttackOrigin" type="Marker3D" parent="."]
+position = Vector3(0, 0.8, 0)

@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/actors/enemy.tscn" id="base"]
+
+[node name="Walker" instance=ExtResource("base")]
+kind = "walker"
+base_health = 36.0
+speed = 2.1
+contact_damage = 10.0
+score_value = 100
+radius = 0.43
+visual_scale = 0.8
+
+[node name="Visuals" parent="." index="1"]
+skin_color = Color(0.6862745098039216, 0.7725490196078432, 0.6862745098039216, 1)
+cloth_color = Color(0.1607843137254902, 0.48627450980392156, 0.5372549019607843, 1)
+always_show_health = false

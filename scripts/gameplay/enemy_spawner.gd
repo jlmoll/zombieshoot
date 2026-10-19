@@ -4,7 +4,13 @@ extends Node3D
 
 signal enemy_defeated(enemy: Node3D)
 
-const ENEMY_SCENE: PackedScene = preload("res://scenes/actors/enemy.tscn")
+@export var enemy_scenes: Dictionary[String, PackedScene] = {
+	"walker": preload("res://scenes/enemies/walker.tscn"),
+	"runner": preload("res://scenes/enemies/runner.tscn"),
+	"brute": preload("res://scenes/enemies/brute.tscn"),
+	"spitter": preload("res://scenes/enemies/spitter.tscn"),
+	"boss": preload("res://scenes/enemies/boss.tscn"),
+}
 var player: Node3D
 var navigation: HordeNavigation
 var combat: Node3D
@@ -15,13 +21,18 @@ var _serial: int = 0
 
 
 func spawn(kind: String, at: Vector3, wave: int) -> Zombie:
-	var enemy: Zombie = ENEMY_SCENE.instantiate()
+	var scene: PackedScene = enemy_scenes.get(kind, enemy_scenes.get("walker"))
+	if scene == null:
+		push_error("EnemySpawner has no scene for %s and no walker fallback." % kind)
+		return null
+	var enemy := scene.instantiate() as Zombie
 	_serial += 1
 	enemy.name = "%s_%03d" % [kind.to_pascal_case(), _serial]
 	enemy.target = player
 	enemy.navigation = navigation
-	enemy.configure(kind, wave)
-	enemy.position = at
+	enemy.configure_wave(wave)
+	enemy.neighbors = get_children
+	enemy.position = to_local(at)
 	enemy.defeated.connect(enemy_defeated.emit)
 	enemy.enemy_bullet_requested.connect(combat.spawn_enemy_bullet)
 	enemy.particles_requested.connect(effects.spawn_particles)

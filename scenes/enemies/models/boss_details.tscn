@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_llx0c"]
+albedo_color = Color(0.7176471, 0.6313726, 0.54509807, 1)
+roughness = 0.88
+
+[sub_resource type="SphereMesh" id="SphereMesh_wblck"]
+radial_segments = 8
+rings = 4
+
+[node name="VariantDetails" type="Node3D" unique_id=1010308168]
+
+[node name="ShoulderSpike1" type="MeshInstance3D" parent="." unique_id=925026593]
+transform = Transform3D(0.18, 0, 0, 0, 0.34, 0, 0, 0, 0.2, -0.42, 1.34, 0)
+material_override = SubResource("StandardMaterial3D_llx0c")
+mesh = SubResource("SphereMesh_wblck")
+
+[node name="ShoulderSpike2" type="MeshInstance3D" parent="." unique_id=870073525]
+transform = Transform3D(0.18, 0, 0, 0, 0.34, 0, 0, 0, 0.2, 0.42, 1.34, 0)
+material_override = SubResource("StandardMaterial3D_llx0c")
+mesh = SubResource("SphereMesh_wblck")

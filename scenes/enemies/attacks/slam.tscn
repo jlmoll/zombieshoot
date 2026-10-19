@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_slam_attack.gd" id="slam"]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_radial_attack.gd" id="ring"]
+[node name="Slam" type="Node" node_paths=PackedStringArray("ring")]
+script = ExtResource("slam")
+attack_id = &"slam"
+maximum_distance = 4.8
+windup_duration = 0.95
+cooldown = 3.4
+warning_radius = 4.3
+scale_warning_with_model = false
+ring = NodePath("Ring")
+[node name="Ring" type="Node" parent="."]
+script = ExtResource("ring")
+projectile_count = 8
+enraged_count = 8
+damage = 10.0
+projectile_speed = 4.0
+rotation_rate = 0.0
+trauma = 0.4

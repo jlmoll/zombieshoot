@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://2wocvl71buu"]
+
+[ext_resource type="PackedScene" path="res://scenes/actors/enemy.tscn" id="base"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/models/spitter_details.tscn" id="details"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/attacks/spit.tscn" id="spit"]
+
+[node name="Spitter" unique_id=687873277 instance=ExtResource("base")]
+kind = "spitter"
+base_health = 50.0
+speed = 1.85
+contact_damage = 8.0
+score_value = 220
+
+[node name="Visuals" parent="." index="1" unique_id=805906062]
+skin_color = Color(0.7058824, 0.8509804, 0.41960785, 1)
+cloth_color = Color(0.28235295, 0.46666667, 0.3529412, 1)
+
+[node name="Details" parent="Visuals/Body/VariantDetails" parent_id_path=PackedInt32Array(433322803) index="0" unique_id=1804947109 instance=ExtResource("details")]
+
+[node name="Movement" parent="." index="2"]
+keep_distance = true
+
+[node name="Spit" parent="Combat" index="0" unique_id=737888471 instance=ExtResource("spit")]
+
+[node name="AttackOrigin" parent="." index="4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)

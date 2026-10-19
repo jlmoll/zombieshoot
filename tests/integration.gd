@@ -320,7 +320,7 @@ func _test_actor_isolation() -> void:
 	var local_player: Node3D = player_scene.instantiate() as Node3D
 	isolated.add_child(local_player)
 	var local_enemy: Node3D = enemy_scene.instantiate() as Node3D
-	local_enemy.configure("walker", 1)
+	local_enemy.configure_wave(1)
 	local_enemy.target = local_player
 	isolated.add_child(local_enemy)
 	var shots: Array[int] = [0]
@@ -328,8 +328,8 @@ func _test_actor_isolation() -> void:
 	local_player.bullet_requested.connect(func(_origin: Vector3, _direction: Vector3, _damage: float, _speed: float, _pierce: int) -> void: shots[0] += 1)
 	local_enemy.defeated.connect(func(_enemy: Node3D) -> void: defeats[0] += 1)
 	local_enemy.take_damage(18.0)
-	local_enemy.configure("walker", 2)
-	_check(local_enemy.health == local_enemy.max_health and not local_enemy.visuals.get_node("GeneratedVisuals/HealthBar").visible and is_equal_approx(local_enemy.visuals._health_fill.scale.x, 0.9 * local_enemy._visual_scale), "reconfiguring same enemy type resets health presentation with health state")
+	local_enemy.configure_wave(2)
+	_check(local_enemy.health == local_enemy.max_health and not local_enemy.visuals.get_node("Indicators/HealthBar").visible and is_equal_approx(local_enemy.visuals._health_fill.scale.x, 0.9), "reconfiguring same enemy type resets health presentation with health state")
 	var score_before: int = world.session.score
 	var kills_before: int = world.session.kills
 	var bullets_before: int = world.session.combat.get_node("Projectiles").get_child_count()
@@ -406,25 +406,25 @@ func _test_enemy_navigation_and_attacks() -> void:
 	world.session.player.position = Vector3.ZERO
 	world.arena.navigation.rebuild()
 	var spitter: Node3D = world.session.enemies.spawn("spitter", Vector3(0, 0, -9), world.session.waves.wave)
-	spitter._attack_cooldown = 0.0
+	spitter.combat.cooldown_remaining = 0.0
 	await _frames(5)
-	_check(spitter._windup > 0.0 and spitter.visuals.warning.visible, "spitter attack has visible windup")
+	_check(spitter.combat.windup_remaining > 0.0 and spitter.visuals.warning.visible, "spitter attack has visible windup")
 	await _frames(45)
 	_check(get_nodes_in_group("projectiles").size() >= 3, "spitter fires three-projectile fan after windup")
 	await _clear_enemies()
 	var boss: Node3D = world.session.enemies.spawn("boss", Vector3(0, 0, -10), world.session.waves.wave)
-	boss._attack_cooldown = 0.0
+	boss.combat.cooldown_remaining = 0.0
 	await _frames(5)
-	_check(boss._windup > 0.0 and boss.visuals.warning.visible, "boss attack has visible windup")
+	_check(boss.combat.windup_remaining > 0.0 and boss.visuals.warning.visible, "boss attack has visible windup")
 	await _frames(52)
 	_check(get_nodes_in_group("projectiles").size() >= 10, "boss emits radial projectile pattern")
 	await _clear_enemies()
 	world.session.player.health = 100.0
 	world.session.player.invulnerability = 0.0
 	var slammer: Node3D = world.session.enemies.spawn("boss", Vector3(0, 0, -3), world.session.waves.wave)
-	slammer._attack_cooldown = 0.0
+	slammer.combat.cooldown_remaining = 0.0
 	await _frames(5)
-	_check(slammer._attack == "slam" and slammer.visuals.warning.visible, "nearby boss telegraphs area slam")
+	_check(slammer.combat.current_attack.attack_id == &"slam" and slammer.visuals.warning.visible, "nearby boss telegraphs area slam")
 	await _frames(60)
 	_check(world.session.player.health == 74.0, "slam deals advertised area damage after windup")
 	print("Integration: obstacle routing, telegraphs, ranged AI and boss patterns checked")

@@ -21,7 +21,8 @@ DeadShift (Game)
 │       ├── Enemies           EnemySpawner; propietario de los zombis
 │       │   └── Zombie
 │       │       ├── CollisionShape3D
-│       │       └── Visuals   Modelo, animación, vida y avisos de ataque
+│       │       ├── Movement / Combat  Componentes y ataques reutilizables
+│       │       └── Visuals   Modelo, detalles, vida y avisos guardados como nodos
 │       ├── Combat
 │       │   ├── Projectiles
 │       │   └── Grenades
@@ -48,6 +49,7 @@ Los nodos y widgets permanentes se declaran en `.tscn`. La geometría de la aren
 | `CombatService` | Crear proyectiles y resolver el daño de explosiones | Solicitudes de disparo y granada; población de enemigos |
 | `Survivor` / `Zombie` | Movimiento, reglas y estado de cada actor | Señales de combate, audio, partículas y sacudida |
 | `SurvivorVisuals` / `ZombieVisuals` | Cuerpo y animación | Datos del actor; nunca modifican sus reglas |
+| `EnemyMovement` / `EnemyCombat` / `EnemyAttack` | Movimiento y ataques compuestos de cada variante | Objetivo, navegación y población inyectados; señales de efectos |
 | `WeaponController` | Inventario, montaje, selección y bloqueo compartido | Órdenes del portador y señales de armas |
 | `Weapon` | Contrato de arma, configuración y cadencia | Componentes exportados; señales de proyectiles y feedback |
 | `WeaponMagazine` / `ProjectileEmitter` / `WeaponPresentation` | Munición y recarga, patrón balístico, modelo y boca propios | Composición de cada escena de arma |
@@ -73,7 +75,7 @@ Los grupos `player`, `enemies`, `projectiles` y `grenades` sirven para inspecci�
 ## Dónde ampliar el juego
 
 - **Oleadas y enemigos programados:** `scripts/gameplay/wave_director.gd`.
-- **Comportamiento de enemigos:** `scripts/enemy.gd`; aspecto en `scripts/actors/enemy_visuals.gd`.
+- **Enemigos:** base `scenes/actors/enemy.tscn`, variantes en `scenes/enemies/` y componentes en `scripts/enemies/`; consulta [enemigos editables](enemies.md).
 - **Armas:** escenas en `scenes/weapons/` y componentes en `scripts/weapons/`; consulta [armas editables](weapons.md).
 - **Control del jugador:** `scripts/player.gd`; cuerpo y animación en `scripts/actors/player_visuals.gd`.
 - **Granadas y balas:** `scripts/grenade.gd`, `scripts/projectile.gd` y resolución de daño en `CombatService`.

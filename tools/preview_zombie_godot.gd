@@ -21,12 +21,12 @@ func setup() -> void:
 	var light := DirectionalLight3D.new()
 	light.rotation_degrees = Vector3(-40, -35, 0)
 	stage.add_child(light)
-	actor = load("res://scenes/actors/enemy.tscn").instantiate()
+	actor = load("res://scenes/enemies/walker.tscn").instantiate()
 	stage.add_child(actor)
 	actor.set_physics_process(false)
 	camera = Camera3D.new()
 	stage.add_child(camera)
-	camera.position = Vector3(2.8, 2.5, -6)
+	camera.position = Vector3(2.8, 2.5, 6)
 	camera.look_at(Vector3(0,1.0,0))
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera.size = 3.0
