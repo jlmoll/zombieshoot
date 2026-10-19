@@ -44,8 +44,16 @@ def order_declarations(source: str) -> str:
             merged.append((start, end))
     if not merged:
         return source
+    # Documentation comments belong to the declaration, including its annotations.
+    documented = []
+    for start, end in merged:
+        while start > 0 and lines[start - 1].startswith("##"):
+            start -= 1
+        documented.append((start, end))
+    merged = documented
 
     def section(block: str) -> int:
+        block = "\n".join(line for line in block.splitlines() if not line.startswith("##"))
         if block.startswith("const "):
             return 0
         if block.startswith("static var "):

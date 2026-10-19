@@ -19,40 +19,69 @@ signal trauma_requested(amount: float)
 signal defeated(enemy: Node3D)
 
 @export_group("Identity and stats")
+## Identificador del tipo. Debe coincidir con su clave en EnemySpawner y las reglas de oleada.
 @export var kind: String = "walker"
+## Equipo utilizado para filtrar daño aliado y atribuir los ataques de este enemigo.
 @export var team: DamageContext.Team = DamageContext.Team.ENEMY
+## Vida máxima en la primera oleada, antes de aplicar [member health_per_wave].
 @export_range(1.0, 10000.0) var base_health: float = 36.0
+## Incremento de vida por oleada expresado como fracción de la vida base: 0.105 = 10,5 %.
+## Fórmula: base_health * (1 + (numero_de_oleada - 1) * health_per_wave).
+## El crecimiento es lineal; no modifica la velocidad ni el daño.
 @export_range(0.0, 1.0) var health_per_wave: float = 0.105
+## Velocidad de desplazamiento en metros por segundo. No aumenta automáticamente por oleada.
 @export_range(0.0, 30.0) var speed: float = 2.1
+## Daño de cada golpe por contacto. Los ataques especiales tienen su propio daño.
 @export_range(0.0, 100.0) var contact_damage: float = 10.0
+## Puntos base al morir por daño atribuido a un jugador, antes del multiplicador de oleada.
 @export_range(0, 10000) var score_value: int = 100
 @export_group("Body")
+## Radio de colisión en metros. También interviene en separación y alcance de contacto.
 @export_range(0.1, 3.0) var radius: float = 0.43:
 	set(value):
 		radius = value
 		_refresh_dimensions()
+## Escala del modelo y sus indicadores. Ajusta también la altura de la colisión,
+## pero no el radio, la vida, la velocidad ni el daño.
 @export_range(0.1, 5.0) var visual_scale: float = 0.8:
 	set(value):
 		visual_scale = value
 		_refresh_dimensions()
+## Altura del cuerpo antes de aplicar visual_scale, en metros.
+## La cápsula conserva una altura mínima equivalente al diámetro de su radio.
 @export_range(0.1, 5.0) var model_hit_height: float = 2.25:
 	set(value):
 		model_hit_height = value
 		_refresh_dimensions()
 @export_group("Combat response")
+## Segundos mínimos entre golpes por contacto de este enemigo.
 @export_range(0.01, 5.0) var contact_interval: float = 1.1
+## Alcance adicional en metros sobre el radio para golpear al jugador por contacto.
 @export_range(0.0, 3.0) var contact_reach: float = 0.55
+## Velocidad de retroceso añadida por impacto, en metros por segundo. Con 0 no hay empuje.
 @export_range(0.0, 10.0) var knockback_strength: float = 2.3
+## Rapidez con la que desaparece el retroceso, en metros por segundo al cuadrado.
+## Un valor mayor permite recuperar antes el movimiento normal.
 @export_range(0.0, 50.0) var knockback_recovery: float = 15.0
+## Duración en segundos del destello visual al recibir daño.
 @export_range(0.0, 2.0) var hit_flash_duration: float = 0.16
+## Segundos que se conserva el cadáver después de terminar su animación de muerte.
+## El enemigo deja de contar para la oleada en cuanto muere, antes de retirarlo.
 @export_range(0.0, 2.0) var corpse_linger: float = 0.25
+## Cantidad de partículas solicitadas al morir; el servicio de efectos puede limitarlas.
 @export_range(0, 100) var death_particle_count: int = 7
+## Color de las partículas de muerte.
 @export var death_color := Color("a3b879")
 @export_group("Components")
+## Hijo de presentación: modelo, animaciones, barra de vida y avisos de ataque.
 @export var visuals: ZombieVisuals
+## Hijo que calcula persecución, separación y distancias de combate.
 @export var movement: EnemyMovement
+## Hijo que selecciona y ejecuta sus escenas de ataque.
 @export var combat: EnemyCombat
+## Marcador del propio enemigo que fija el origen global de sus proyectiles.
 @export var attack_origin: Marker3D
+## Componente de vida exclusivo de esta instancia; debe pertenecer al propio enemigo.
 @export var health_component: HealthComponent
 var health: float:
 	get:

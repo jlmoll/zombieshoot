@@ -6,6 +6,8 @@ extends Node3D
 signal enemy_defeated(enemy: Node3D)
 signal spawn_failed(message: String)
 
+## Registro de identificadores de enemigo y sus escenas, con raíz de tipo Zombie.
+## Usa estas claves en las oleadas y entradas. Un tipo sin escena detiene la partida.
 @export var enemy_scenes: Dictionary[String, PackedScene] = {
 	"walker": preload("res://scenes/enemies/walker.tscn"),
 	"runner": preload("res://scenes/enemies/runner.tscn"),

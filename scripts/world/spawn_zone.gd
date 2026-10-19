@@ -2,15 +2,26 @@
 class_name SpawnZone
 extends Marker3D
 ## Place and rotate this marker; its local X axis defines the entrance width.
+
+## Anchura de la entrada en metros sobre el eje X local del marcador.
+## La aparición se elige al azar dentro del segmento; con 0 usa el centro exacto.
 @export_range(0.0, 40.0) var width: float = 26.0:
 	set(value):
 		width = value
 		gizmo_extents = 0.5
 		_refresh_preview()
+## Peso relativo frente a otras entradas válidas: 2 tiene el doble de peso que 1.
+## Con 0 esta entrada no participa en la selección.
 @export_range(0.0, 10.0) var weight: float = 1.0
+## Primera oleada que puede utilizar la entrada. Permanece disponible en las posteriores.
 @export_range(1, 100) var first_wave: int = 1
+## Activa esta entrada. Desactívala para excluirla sin eliminar el marcador del mapa.
 @export var enabled: bool = true
+## Tipos de enemigo permitidos en esta entrada, incluidos los jefes si deben aparecer aquí.
+## Los identificadores deben coincidir con el registro de EnemySpawner.
 @export var enemy_kinds: Array[String] = ["walker", "runner", "spitter", "brute"]
+## Distancia mínima en metros entre el punto de aparición y el jugador objetivo.
+## Un valor demasiado alto puede impedir apariciones y agotar el tiempo de la oleada.
 @export_range(0.0, 40.0) var minimum_distance: float = 8.0
 
 

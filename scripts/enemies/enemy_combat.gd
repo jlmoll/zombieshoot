@@ -17,9 +17,13 @@ signal projectile_spawn_requested(
 signal particles_requested(at: Vector3, color: Color, count: int)
 signal trauma_requested(amount: float)
 
+## Espera mínima en segundos tras aparecer antes de intentar el primer ataque especial.
 @export_range(0.0, 10.0) var initial_delay_min: float = 1.2
+## Espera máxima en segundos. Se elige un valor aleatorio entre ambos límites por enemigo.
 @export_range(0.0, 10.0) var initial_delay_max: float = 2.8
+## Identificador del sonido reproducido cuando comienza el aviso de un ataque especial.
 @export var warning_sound: String = "warning"
+## Identificador del sonido reproducido al ejecutar el ataque después de su preparación.
 @export var attack_sound: String = "enemy_shoot"
 var attacks: Array[EnemyAttack] = []
 var current_attack: EnemyAttack

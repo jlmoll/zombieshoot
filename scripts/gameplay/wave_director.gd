@@ -8,6 +8,8 @@ signal wave_cleared
 signal enemy_spawn_requested(kind: String, at: Vector3, wave_number: int)
 signal configuration_failed(errors: PackedStringArray)
 
+## Campaña que ejecuta este director: orden, cantidades, composición, ritmo y jefes.
+## Edita sus Resources de oleada para ajustar la dificultad sin modificar el director.
 @export var campaign: WaveCampaign = preload("res://assets/waves/default_campaign.tres")
 var wave: int = 0
 var spawn_left: int = 0

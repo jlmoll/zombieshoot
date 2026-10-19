@@ -2,14 +2,26 @@ class_name EnemyMovement
 extends Node
 ## Shared pursuit, optional standoff movement and separation from an injected roster.
 
+## Segundos entre actualizaciones de ruta y separación. Menor valor responde antes,
+## pero aumenta el trabajo de navegación cuando hay muchos enemigos.
 @export_range(0.01, 2.0) var navigation_interval: float = 0.22
+## Espera aleatoria adicional, en segundos, para repartir las actualizaciones de la horda.
 @export_range(0.0, 1.0) var navigation_jitter: float = 0.08
+## Activa retroceso y movimiento lateral a las distancias configuradas, útil para escupidores.
+## Desactivado, el enemigo persigue al objetivo siguiendo la navegación.
 @export var keep_distance: bool = false
+## Distancia en metros por debajo de la que se aleja del objetivo si keep_distance está activo.
 @export_range(0.0, 30.0) var retreat_distance: float = 4.7
+## Distancia en metros por debajo de la que se mueve lateralmente en lugar de acercarse.
+## Se usa con keep_distance y fuera del radio de retroceso.
 @export_range(0.0, 30.0) var orbit_distance: float = 7.0
+## Frecuencia angular del vaivén lateral. Un valor mayor cambia de lado más rápido.
 @export_range(0.0, 5.0) var orbit_frequency: float = 0.55
+## Espacio adicional en metros que intenta conservar respecto a los radios de otros enemigos.
 @export_range(0.0, 2.0) var separation_margin: float = 0.12
+## Coeficiente de empuje entre enemigos demasiado próximos. Un valor mayor dispersa la horda.
 @export_range(0.0, 10.0) var separation_strength: float = 3.8
+## Velocidad máxima en metros por segundo que puede añadir el empuje de separación.
 @export_range(0.0, 10.0) var maximum_separation: float = 3.0
 var navigation: HordeNavigation
 var neighbors: Callable

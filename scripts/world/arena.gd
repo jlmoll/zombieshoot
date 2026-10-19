@@ -2,10 +2,18 @@
 class_name Arena
 extends Node3D
 ## Editor-authored map. Geometry is the source of truth for navigation.
+
+## Marcador del propio mapa donde comienza el jugador; se usa su posición global.
 @export var player_spawn: Marker3D
+## CollisionShape3D del propio mapa con BoxShape3D que define los límites jugables.
+## Se utiliza para navegación y para contener las granadas dentro de la arena.
 @export var playable_area: CollisionShape3D
+## Nodo del propio mapa cuyos hijos SpawnZone definen las entradas de enemigos.
 @export var spawn_container: Node3D
+## Tamaño de celda de navegación en metros. Menor valor da más precisión a costa de más trabajo.
 @export_range(0.25, 2.0) var navigation_cell_size: float = 1.0
+## Margen de seguridad en metros que reduce los límites disponibles para la navegación.
+## Un valor alto puede cerrar pasos estrechos o impedir alcanzar una entrada.
 @export_range(0.1, 2.0) var navigation_clearance: float = 0.75
 @onready var navigation: HordeNavigation = get_node_or_null("Navigation") as HordeNavigation
 
