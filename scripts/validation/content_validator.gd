@@ -135,6 +135,8 @@ static func validate_grenade_scene(scene: PackedScene) -> PackedStringArray:
 
 static func validate_run(arena: Arena, session: Node) -> PackedStringArray:
 	var errors := validate_tree(session)
+	if not session is RunSession:
+		errors.append("Run scene needs a RunSession root.")
 	var director := session.get_node_or_null("WaveDirector") as WaveDirector
 	var spawner := session.get_node_or_null("Enemies") as EnemySpawner
 	if director == null or spawner == null:
@@ -148,6 +150,45 @@ static func validate_run(arena: Arena, session: Node) -> PackedStringArray:
 	return unique
 
 
+static func validate_session_contract(session: RunSession) -> PackedStringArray:
+	var errors := PackedStringArray()
+	var required: Array[Array] = [
+		["Player", Survivor, "Survivor"],
+		["Enemies", EnemySpawner, "EnemySpawner"],
+		["Combat", CombatService, "CombatService"],
+		["Combat/Projectiles", Node3D, "Node3D"],
+		["Combat/Grenades", Node3D, "Node3D"],
+		["Pickups", PickupManager, "PickupManager"],
+		["Effects", ImpactEffects, "ImpactEffects"],
+		["WaveDirector", WaveDirector, "WaveDirector"],
+		["Rewards", RunRewards, "RunRewards"],
+	]
+	for entry in required:
+		var component := session.get_node_or_null(entry[0])
+		if not is_instance_valid(component) or not is_instance_of(component, entry[1]):
+			errors.append("RunSession needs a %s at '%s'." % [entry[2], entry[0]])
+	return errors
+
+
+static func validate_survivor(survivor: Survivor) -> PackedStringArray:
+	var errors := PackedStringArray()
+	if (
+		not is_instance_valid(survivor.health_component)
+		or not survivor.is_ancestor_of(survivor.health_component)
+	):
+		errors.append("Survivor needs an owned HealthComponent reference.")
+	var required: Array[Array] = [
+		["Visuals", SurvivorVisuals, "SurvivorVisuals"],
+		["WeaponController", WeaponController, "WeaponController"],
+		["PlayerInput", PlayerInput, "PlayerInput"],
+	]
+	for entry in required:
+		var component := survivor.get_node_or_null(entry[0])
+		if not is_instance_valid(component) or not is_instance_of(component, entry[1]):
+			errors.append("Survivor needs a %s at '%s'." % [entry[2], entry[0]])
+	return errors
+
+
 static func validate_tree(root: Node) -> PackedStringArray:
 	var errors := PackedStringArray()
 	var arenas: Array[Arena] = []
@@ -158,7 +199,11 @@ static func validate_tree(root: Node) -> PackedStringArray:
 		var node: Node = nodes.pop_back()
 		for child in node.get_children():
 			nodes.append(child)
-		if node is Arena:
+		if node is RunSession:
+			errors.append_array(validate_session_contract(node))
+		elif node is Survivor:
+			errors.append_array(validate_survivor(node))
+		elif node is Arena:
 			arenas.append(node)
 			errors.append_array(node.get_configuration_errors())
 		elif node is WaveDirector:

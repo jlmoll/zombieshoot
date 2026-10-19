@@ -75,8 +75,9 @@ granada, registro de enemigos, ataques concretos y entradas para cada tipo y
 oleada. Al abrir la escena principal o una arena también cruza el mapa con
 la campaña y el registro de la sesión.
 
-La ejecución comprueba el contenido antes de inicializar la partida. Un error
-detiene la simulación y muestra un mensaje; las apariciones bloqueadas por
+La ejecución comprueba los nodos de sesión, componentes del jugador y contenido
+antes de inicializar la partida. Un error muestra una pantalla con opciones
+de reintento y menú, sin permitir reanudar una sesión inválida. Las apariciones bloqueadas por
 distancia o navegación fallan tras el tiempo configurable de la oleada
 (`blocked_spawn_timeout`, 15 segundos por defecto). No se descartan enemigos
 pendientes ni se sustituye silenciosamente un tipo no registrado.

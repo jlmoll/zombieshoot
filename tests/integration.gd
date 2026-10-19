@@ -1046,8 +1046,18 @@ func _test_invalid_content() -> void:
 	world.map_scene = invalid
 	world.start_run()
 	_check(
-		world.mode == world.Mode.PAUSED and paused and world.session == null,
+		world.mode == world.Mode.CONFIGURATION_ERROR and paused and world.session == null,
 		"invalid map root stops visibly before actor initialization"
+	)
+	world.resume_run()
+	_check(
+		world.mode == world.Mode.CONFIGURATION_ERROR and paused,
+		"configuration error cannot resume an absent session"
+	)
+	var details := world.hud.menus.find_child("ConfigurationDetails", true, false) as RichTextLabel
+	_check(
+		details != null and details.text.contains("Arena root"),
+		"configuration error is visible in its own screen"
 	)
 	world.map_scene = original
 	world.start_run()
@@ -1059,6 +1069,11 @@ func _test_invalid_content() -> void:
 	world.session.enemies.enemy_scenes.erase("walker")
 	world.session.start()
 	_check(
-		world.mode == world.Mode.PAUSED and not world.session.waves.running,
+		world.mode == world.Mode.CONFIGURATION_ERROR and not world.session.waves.running,
 		"missing enemy registration stops the run instead of stalling a wave"
+	)
+	world.resume_run()
+	_check(
+		world.mode == world.Mode.CONFIGURATION_ERROR and paused,
+		"configuration error cannot resume a stopped wave"
 	)

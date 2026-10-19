@@ -2,7 +2,7 @@ class_name Game
 extends Node3D
 ## Coordinates application states and wires long-lived nodes to a fresh run.
 
-enum Mode { TITLE, PLAYING, PAUSED, UPGRADES, DEAD, VICTORY }
+enum Mode { TITLE, PLAYING, PAUSED, UPGRADES, DEAD, VICTORY, CONFIGURATION_ERROR }
 
 const RUN_SCENE: PackedScene = preload("res://scenes/gameplay/run_session.tscn")
 @export var map_scene: PackedScene = preload("res://scenes/world/arena.tscn")
@@ -219,7 +219,6 @@ func _set_muted(enabled: bool) -> void:
 func _on_configuration_failed(errors: PackedStringArray) -> void:
 	if is_instance_valid(session) and is_instance_valid(session.waves):
 		session.waves.running = false
-	_set_mode(Mode.PAUSED)
-	hud.show_pause()
-	hud.set_banner("CONFIGURACIÓN INVÁLIDA", "\n".join(errors), 60.0)
+	_set_mode(Mode.CONFIGURATION_ERROR)
+	hud.show_configuration_error(errors)
 	push_warning("Run stopped: " + "; ".join(errors))

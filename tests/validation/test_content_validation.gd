@@ -43,6 +43,8 @@ static func run(tree: SceneTree) -> bool:
 	var detached_session := Game.RUN_SCENE.instantiate()
 	assert(ContentValidator.validate_run(arena, detached_session).is_empty())
 	detached_session.free()
+	assert(_test_session_contract(arena))
+	assert(_test_survivor_contract(arena))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 231
 	var point: Variant = arena.choose_spawn("walker", 1, arena.player_spawn.global_position, rng)
@@ -67,6 +69,76 @@ static func run(tree: SceneTree) -> bool:
 	assert(_contains(disabled_errors, "no enabled entrance"))
 	spawner.free()
 	transformed_parent.free()
+	return true
+
+
+static func _test_session_contract(arena: Arena) -> bool:
+	for path in [
+		"Player",
+		"Enemies",
+		"Combat",
+		"Combat/Projectiles",
+		"Combat/Grenades",
+		"Pickups",
+		"Effects",
+		"WaveDirector",
+		"Rewards"
+	]:
+		for replace_with_wrong_type in [false, true]:
+			var session := Game.RUN_SCENE.instantiate()
+			var component := session.get_node(path)
+			var parent := component.get_parent()
+			var component_name := component.name
+			parent.remove_child(component)
+			component.free()
+			if replace_with_wrong_type:
+				var wrong_type := Node.new()
+				wrong_type.name = component_name
+				parent.add_child(wrong_type)
+			assert(
+				_contains(ContentValidator.validate_run(arena, session), "'%s'" % path),
+				"Missing or mistyped run components must fail before _ready"
+			)
+			assert(
+				_contains(ContentValidator.validate_tree(session), "'%s'" % path),
+				"The editor's open RunSession validation must enforce the same contract"
+			)
+			session.free()
+	var wrong_root := Node3D.new()
+	assert(_contains(ContentValidator.validate_run(arena, wrong_root), "RunSession root"))
+	wrong_root.free()
+	return true
+
+
+static func _test_survivor_contract(arena: Arena) -> bool:
+	var session := Game.RUN_SCENE.instantiate()
+	var survivor := session.get_node("Player") as Survivor
+	survivor.health_component = null
+	assert(_contains(ContentValidator.validate_run(arena, session), "owned HealthComponent"))
+	assert(_contains(ContentValidator.validate_tree(survivor), "owned HealthComponent"))
+	var foreign_health := HealthComponent.new()
+	session.add_child(foreign_health)
+	survivor.health_component = foreign_health
+	assert(_contains(ContentValidator.validate_run(arena, session), "owned HealthComponent"))
+	assert(_contains(ContentValidator.validate_tree(survivor), "owned HealthComponent"))
+	session.free()
+	for path in ["Visuals", "WeaponController", "PlayerInput"]:
+		for replace_with_wrong_type in [false, true]:
+			session = Game.RUN_SCENE.instantiate()
+			survivor = session.get_node("Player") as Survivor
+			var component := survivor.get_node(path)
+			survivor.remove_child(component)
+			component.free()
+			if replace_with_wrong_type:
+				var wrong_type := Node.new()
+				wrong_type.name = path
+				survivor.add_child(wrong_type)
+			assert(_contains(ContentValidator.validate_run(arena, session), "'%s'" % path))
+			assert(
+				_contains(ContentValidator.validate_tree(survivor), "'%s'" % path),
+				"The editor's open Survivor validation must run before onready fields exist"
+			)
+			session.free()
 	return true
 
 

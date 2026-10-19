@@ -98,6 +98,30 @@ func show_pause() -> void:
 	_focus_when_ready.call_deferred(resume)
 
 
+func show_configuration_error(errors: PackedStringArray) -> void:
+	var column := _screen("ConfigurationErrorScreen", 920)
+	column.add_child(_label("ConfigurationHeading", "REVISAR CONFIGURACIÓN", 40, RED))
+	column.add_child(
+		_label(
+			"ConfigurationMessage",
+			"Revisa el contenido del proyecto y vuelve a intentarlo.",
+			18,
+			MUTED
+		)
+	)
+	var details := RichTextLabel.new()
+	details.name = "ConfigurationDetails"
+	details.text = "\n".join(errors)
+	details.custom_minimum_size = Vector2(800, 180)
+	details.add_theme_font_size_override("normal_font_size", 16)
+	details.add_theme_color_override("default_color", MUTED)
+	column.add_child(details)
+	var retry := _button("RestartButton", "VOLVER A INTENTAR    →", restart_requested.emit, true)
+	column.add_child(retry)
+	column.add_child(_button("MenuButton", "VOLVER AL MENÚ", menu_requested.emit))
+	_focus_when_ready.call_deferred(retry)
+
+
 func show_game_over(score: int, wave: int, best: int, victory: bool = false) -> void:
 	var column := _screen("VictoryScreen" if victory else "DefeatScreen", 620)
 	column.add_child(

@@ -35,6 +35,12 @@ func show_pause() -> void:
 	menus.show_pause()
 
 
+func show_configuration_error(errors: PackedStringArray) -> void:
+	feedback.clear_banner()
+	gameplay.hide()
+	menus.show_configuration_error(errors)
+
+
 func show_game_over(score: int, wave: int, best: int, victory: bool = false) -> void:
 	feedback.clear_banner()
 	gameplay.hide()
