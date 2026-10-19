@@ -1,0 +1,23 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/weapons/weapon.tscn" id="base"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/models/pistol_model.tscn" id="model"]
+
+[node name="Pistol" instance=ExtResource("base")]
+display_name = "PISTOLA"
+weapon_id = &"pistol"
+damage = 30.0
+fire_interval = 0.22
+magazine_capacity = 12
+reload_time = 0.9
+projectile_speed = 36.0
+pellets = 1
+spread = 0.018
+shot_sound = "pistol"
+recoil_amount = 0.027
+camera_trauma = 0.025
+
+[node name="Muzzle" parent="Presentation/RecoilRoot" index="0"]
+position = Vector3(0, 0.035, 0.285)
+
+[node name="Model" parent="Presentation/RecoilRoot/ModelSlot" instance=ExtResource("model")]

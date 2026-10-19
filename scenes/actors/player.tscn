@@ -1,8 +1,13 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scripts/actors/player_visuals.gd" id="2_visuals"]
 [ext_resource type="PackedScene" path="res://assets/models/player_technician.glb" id="3_model"]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_controller.gd" id="controller"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/pistol.tscn" id="pistol"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/shotgun.tscn" id="shotgun"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/smg.tscn" id="smg"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.33
@@ -23,3 +28,12 @@ script = ExtResource("2_visuals")
 
 [node name="TechnicianModel" parent="Visuals" instance=ExtResource("3_model")]
 scale = Vector3(0.9, 0.9, 0.9)
+
+[node name="WeaponController" type="Node" parent="."]
+script = ExtResource("controller")
+
+[node name="Pistol" parent="WeaponController" instance=ExtResource("pistol")]
+
+[node name="Shotgun" parent="WeaponController" instance=ExtResource("shotgun")]
+
+[node name="SubmachineGun" parent="WeaponController" instance=ExtResource("smg")]

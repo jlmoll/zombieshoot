@@ -15,7 +15,9 @@ DeadShift (Game)
 │       ├── Arena             Mapa recreado al reiniciar, con geometría, entradas y navegación
 │       ├── Player
 │       │   ├── CollisionShape3D
-│       │   └── Visuals       Modelo y animación del superviviente
+│       │   ├── WeaponController  Selección y bloqueo de cambio de armas
+│       │   │   └── Weapon × 3   Escenas completas con cargador, emisor y modelo propio
+│       │   └── Visuals       Cuerpo y animación; monta armas en WeaponSocket
 │       ├── Enemies           EnemySpawner; propietario de los zombis
 │       │   └── Zombie
 │       │       ├── CollisionShape3D
@@ -45,7 +47,10 @@ Los nodos y widgets permanentes se declaran en `.tscn`. La geometría de la aren
 | `EnemySpawner` | Crear escenas de enemigos e inyectar sus dependencias | Superviviente, navegación y servicios explícitos |
 | `CombatService` | Crear proyectiles y resolver el daño de explosiones | Solicitudes de disparo y granada; población de enemigos |
 | `Survivor` / `Zombie` | Movimiento, reglas y estado de cada actor | Señales de combate, audio, partículas y sacudida |
-| `SurvivorVisuals` / `ZombieVisuals` | Meshes y animación | Datos del actor; nunca modifican sus reglas |
+| `SurvivorVisuals` / `ZombieVisuals` | Cuerpo y animación | Datos del actor; nunca modifican sus reglas |
+| `WeaponController` | Inventario, montaje, selección y bloqueo compartido | Órdenes del portador y señales de armas |
+| `Weapon` | Contrato de arma, configuración y cadencia | Componentes exportados; señales de proyectiles y feedback |
+| `WeaponMagazine` / `ProjectileEmitter` / `WeaponPresentation` | Munición y recarga, patrón balístico, modelo y boca propios | Composición de cada escena de arma |
 | `PickupManager` / `SupplyPickup` | Crear, caducar, recoger y aplicar suministros | Objetivo inyectado y señal `collected` |
 | `Arena` / `HordeNavigation` | Mapa editable y navegación compartida | Colisiones, área jugable y objetivo inyectado |
 | `SpawnZone` | Entradas editables de enemigos | Anchura, peso, oleada, tipos permitidos y distancia mínima |
@@ -69,7 +74,8 @@ Los grupos `player`, `enemies`, `projectiles` y `grenades` sirven para inspecci�
 
 - **Oleadas y enemigos programados:** `scripts/gameplay/wave_director.gd`.
 - **Comportamiento de enemigos:** `scripts/enemy.gd`; aspecto en `scripts/actors/enemy_visuals.gd`.
-- **Armas y control del jugador:** `scripts/player.gd`; aspecto en `scripts/actors/player_visuals.gd`.
+- **Armas:** escenas en `scenes/weapons/` y componentes en `scripts/weapons/`; consulta [armas editables](weapons.md).
+- **Control del jugador:** `scripts/player.gd`; cuerpo y animación en `scripts/actors/player_visuals.gd`.
 - **Granadas y balas:** `scripts/grenade.gd`, `scripts/projectile.gd` y resolución de daño en `CombatService`.
 - **Mejoras y reglas compartidas:** `scripts/core/game_rules.gd`.
 - **Mapas, estructura y props:** escena `scenes/world/arena.tscn` y `scripts/world/arena.gd`.

@@ -40,17 +40,17 @@ func run() -> void:
 	player.bullet_requested.connect(capture_shot)
 	for weapon in range(3):
 		player.select_weapon(weapon)
-		player._fire_left = 0.0
+		player.weapon_controller.advance(1.0)
 		player.aim_direction = Vector3.RIGHT
 		v.set_aim(player.aim_direction)
-		var muzzle: Vector3 = v.get_muzzle_position()
+		var muzzle: Vector3 = player.weapon_controller.current_weapon.presentation.get_muzzle_position()
 		shots.clear()
 		player.try_shoot()
-		check(shots.size() == player.weapons[weapon].pellets, "Weapon %d keeps pellet count" % weapon)
+		check(shots.size() == player.weapon_controller.weapons[weapon].pellets, "Weapon %d keeps pellet count" % weapon)
 		for origin: Vector3 in shots:
 			check(origin.distance_to(muzzle) < 0.001, "Projectiles originate at rendered muzzle")
-		check(v._flash.visible, "Shot shows muzzle flash")
-		check(v._weapons[weapon].visible, "Selected weapon appears")
+		check(player.weapon_controller.current_weapon.presentation.flash.visible, "Shot shows muzzle flash")
+		check(player.weapon_controller.weapons[weapon].visible, "Selected weapon appears")
 	v.reset_pose()
 	v._animation.advance(0.0)
 	var initial_height: float = v._model.find_child("Head_Pivot",true,false).global_position.y

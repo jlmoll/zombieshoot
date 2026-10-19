@@ -47,7 +47,7 @@ func _process(_dt: float) -> bool:
 	ticks += 1
 	if ticks == 3:
 		var shot: Array = shots[index]
-		actor.visuals.set_weapon(shot[1])
+		actor.select_weapon(shot[1])
 		ap.play("Aim",0.0)
 		ap.seek(0.6,true)
 		ap.pause()

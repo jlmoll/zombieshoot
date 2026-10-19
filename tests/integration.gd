@@ -139,14 +139,14 @@ func _test_menu_focus() -> void:
 func _test_lifecycle_and_player() -> void:
 	await _fresh_run()
 	_check(world.mode == world.Mode.PLAYING and not paused and world.session.waves.wave == 1, "start begins wave one")
-	_check(world.session.player.health == 100.0 and world.session.player.weapons.size() == 3, "fresh survivor has full health and three weapons")
+	_check(world.session.player.health == 100.0 and world.session.player.weapon_controller.weapons.size() == 3, "fresh survivor has full health and three weapons")
 	# Exercise the real input dispatch, including events sent by embedded windows.
 	var key: InputEventKey = InputEventKey.new()
 	key.keycode = KEY_2
 	key.pressed = true
 	Input.parse_input_event(key)
 	await _frames(2)
-	_check(world.session.player.weapon_index == 1, "logical key event selects shotgun through viewport input")
+	_check(world.session.player.weapon_controller.selected_index == 1, "logical key event selects shotgun through viewport input")
 	key.pressed = false
 	Input.parse_input_event(key)
 	key = InputEventKey.new()
@@ -155,7 +155,7 @@ func _test_lifecycle_and_player() -> void:
 	key.pressed = true
 	Input.parse_input_event(key)
 	await _frames(2)
-	_check(world.session.player.weapon_index == 2, "physical key event cycles weapon through viewport input")
+	_check(world.session.player.weapon_controller.selected_index == 2, "physical key event cycles weapon through viewport input")
 	key.pressed = false
 	Input.parse_input_event(key)
 	key = InputEventKey.new()
@@ -164,7 +164,7 @@ func _test_lifecycle_and_player() -> void:
 	key.pressed = true
 	Input.parse_input_event(key)
 	await _frames(2)
-	_check(world.session.player.weapon_index == 0, "hotkey uses visible logical label when remapped scan code differs")
+	_check(world.session.player.weapon_controller.selected_index == 0, "hotkey uses visible logical label when remapped scan code differs")
 	key.pressed = false
 	Input.parse_input_event(key)
 	key = InputEventKey.new()
@@ -205,31 +205,31 @@ func _test_lifecycle_and_player() -> void:
 	_check(player.dash_remaining == 0.0 and player.dash_cooldown == 0.0, "dash and cooldown expire")
 	player.position = Vector3.ZERO
 	player.aim_direction = Vector3.RIGHT
-	var ammo_before: int = player.ammo
+	var ammo_before: int = player.weapon_controller.current_weapon.magazine.ammo
 	player.try_shoot()
-	_check(player.ammo == ammo_before - 1 and not get_nodes_in_group("projectiles").is_empty(), "shoot consumes ammo and creates projectile")
+	_check(player.weapon_controller.current_weapon.magazine.ammo == ammo_before - 1 and not get_nodes_in_group("projectiles").is_empty(), "shoot consumes ammo and creates projectile")
 	player.try_shoot()
-	_check(player.ammo == ammo_before - 1, "fire interval prevents extra immediate shot")
+	_check(player.weapon_controller.current_weapon.magazine.ammo == ammo_before - 1, "fire interval prevents extra immediate shot")
 	player.select_weapon(1)
-	_check(player.magazine_size == 6 and player.ammo == 6, "shotgun has independent magazine")
+	_check(player.weapon_controller.current_weapon.magazine.capacity == 6 and player.weapon_controller.current_weapon.magazine.ammo == 6, "shotgun has independent magazine")
 	player.select_weapon(0)
-	_check(player.ammo == ammo_before - 1, "weapon switch preserves ammo")
+	_check(player.weapon_controller.current_weapon.magazine.ammo == ammo_before - 1, "weapon switch preserves ammo")
 	player.start_reload()
-	_check(player.reloading, "manual reload starts")
+	_check(player.weapon_controller.current_weapon.magazine.reloading, "manual reload starts")
 	await _frames(70)
-	_check(not player.reloading and player.ammo == player.magazine_size, "reload completes and refills magazine")
+	_check(not player.weapon_controller.current_weapon.magazine.reloading and player.weapon_controller.current_weapon.magazine.ammo == player.weapon_controller.current_weapon.magazine.capacity, "reload completes and refills magazine")
 	player.reset_state()
 	player.take_damage(75.0)
 	player.apply_upgrade("health")
 	_check(player.max_health == 125.0 and player.health == 125.0, "health upgrade raises maximum and fully restores life as offered")
 	player.apply_upgrade("damage")
-	_check(is_equal_approx(player.damage_multiplier, 1.25), "damage upgrade provides advertised 25 percent")
+	_check(is_equal_approx(player.weapon_controller.current_weapon.damage_multiplier, 1.25), "damage upgrade provides advertised 25 percent")
 	player.apply_upgrade("speed")
 	_check(is_equal_approx(player.speed_multiplier, 1.15), "speed upgrade provides advertised 15 percent")
 	player.apply_upgrade("fire_rate")
-	_check(is_equal_approx(player.fire_rate_multiplier, 1.2), "fire-rate upgrade provides advertised 20 percent")
+	_check(is_equal_approx(player.weapon_controller.current_weapon.fire_rate_multiplier, 1.2), "fire-rate upgrade provides advertised 20 percent")
 	player.apply_upgrade("reload")
-	_check(is_equal_approx(player.reload_multiplier, 0.8), "reload upgrade reduces reload duration 20 percent")
+	_check(is_equal_approx(player.weapon_controller.current_weapon.reload_multiplier, 0.8), "reload upgrade reduces reload duration 20 percent")
 	player.apply_upgrade("dash")
 	player.dash_cooldown = 0.0
 	player.dash_remaining = 0.0
@@ -244,11 +244,11 @@ func _test_lifecycle_and_player() -> void:
 	_check(player.position.x <= 17.7 and player.position.x > 16.5, "dash collides with arena wall without tunnelling")
 	player.position = Vector3.ZERO
 	player.health = 30.0
-	player.ammo = 0
+	player.weapon_controller.current_weapon.magazine.ammo = 0
 	world.session.pickups.spawn_pickup(Vector3.ZERO, "health")
 	world.session.pickups.spawn_pickup(Vector3.ZERO, "ammo")
 	await _frames(3)
-	_check(player.health == 55.0 and player.ammo == player.magazine_size and world.session.pickups.get_child_count() == 0, "health and ammo pickups apply and disappear")
+	_check(player.health == 55.0 and player.weapon_controller.current_weapon.magazine.ammo == player.weapon_controller.current_weapon.magazine.capacity and world.session.pickups.get_child_count() == 0, "health and ammo pickups apply and disappear")
 	print("Integration: survivor, weapons, upgrades, dash, pickups and pause checked")
 
 
@@ -334,7 +334,7 @@ func _test_actor_isolation() -> void:
 	var kills_before: int = world.session.kills
 	var bullets_before: int = world.session.combat.get_node("Projectiles").get_child_count()
 	local_player.try_shoot()
-	_check(shots[0] == 1 and local_player.ammo == local_player.magazine_size - 1, "isolated survivor emits shooting request without a game-root dependency")
+	_check(shots[0] == 1 and local_player.weapon_controller.current_weapon.magazine.ammo == local_player.weapon_controller.current_weapon.magazine.capacity - 1, "isolated survivor emits shooting request without a game-root dependency")
 	_check(world.session.combat.get_node("Projectiles").get_child_count() == bullets_before, "unconnected actor cannot spawn projectiles into unrelated session")
 	local_enemy.take_damage(100000.0)
 	local_enemy.take_damage(100000.0)
@@ -516,9 +516,9 @@ func _test_progression() -> void:
 		_check(get_nodes_in_group("projectiles").is_empty(), "wave end clears hostile projectiles")
 		if expected_wave < 8:
 			_check(world.mode == world.Mode.UPGRADES and paused, "cleared wave pauses for upgrade choice")
-			var damage_before: float = world.session.player.damage_multiplier
+			var damage_before: float = world.session.player.weapon_controller.current_weapon.damage_multiplier
 			world.choose_upgrade("damage")
-			_check(world.mode == world.Mode.PLAYING and not paused and world.session.player.damage_multiplier > damage_before, "upgrade choice applies and resumes intermission")
+			_check(world.mode == world.Mode.PLAYING and not paused and world.session.player.weapon_controller.current_weapon.damage_multiplier > damage_before, "upgrade choice applies and resumes intermission")
 			world.session.waves.intermission = 0.01
 			await _frames(3)
 	_check(world.mode == world.Mode.VICTORY and paused and world.session.waves.wave == 8, "eighth cleared wave ends in victory")

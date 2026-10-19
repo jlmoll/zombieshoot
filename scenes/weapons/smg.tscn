@@ -1,0 +1,23 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/weapons/weapon.tscn" id="base"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/models/smg_model.tscn" id="model"]
+
+[node name="SubmachineGun" instance=ExtResource("base")]
+display_name = "SUBFUSIL"
+weapon_id = &"smg"
+damage = 14.0
+fire_interval = 0.085
+magazine_capacity = 30
+reload_time = 1.25
+projectile_speed = 40.0
+pellets = 1
+spread = 0.065
+shot_sound = "smg"
+recoil_amount = 0.027
+camera_trauma = 0.025
+
+[node name="Muzzle" parent="Presentation/RecoilRoot" index="0"]
+position = Vector3(0, 0.035, 0.36)
+
+[node name="Model" parent="Presentation/RecoilRoot/ModelSlot" instance=ExtResource("model")]

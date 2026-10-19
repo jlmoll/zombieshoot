@@ -18,93 +18,69 @@ const DASH_COOLDOWN := 1.0
 const MAX_GRENADES: int = 4
 const GRENADES_PER_WAVE: int = 2
 const GRENADE_COOLDOWN: float = 0.35
-const WEAPON_DEFINITIONS: Array[Dictionary] = [
-	{"name": "PISTOLA", "damage": 30.0, "interval": 0.22, "magazine": 12, "reload": 0.9, "speed": 36.0, "pellets": 1, "spread": 0.018, "pierce": 0},
-	{"name": "ESCOPETA", "damage": 19.0, "interval": 0.65, "magazine": 6, "reload": 1.35, "speed": 30.0, "pellets": 7, "spread": 0.28, "pierce": 0},
-	{"name": "SUBFUSIL", "damage": 14.0, "interval": 0.085, "magazine": 30, "reload": 1.25, "speed": 40.0, "pellets": 1, "spread": 0.065, "pierce": 0},
-]
 
 var max_health: float = 100.0
 var health: float = 100.0
-var ammo: int = 12
-var magazine_size: int = 12
-var reloading: bool = false
-var reload_duration: float = 0.9
-var reload_left: float = 0.0
-var weapon_index: int = 0
-var weapons: Array[Dictionary] = []
 var dash_cooldown: float = 0.0
 var dash_remaining: float = 0.0
 var kills: int = 0
 var grenades: int = 0
-var _grenade_left: float = 0.0
-var damage_multiplier: float = 1.0
 var speed_multiplier: float = 1.0
-var fire_rate_multiplier: float = 1.0
-var reload_multiplier: float = 1.0
 var dash_multiplier: float = 1.0
 var aim_direction := Vector3(0.70710678, 0.0, -0.70710678)
 var move_direction := Vector3.ZERO
 var invulnerability: float = 0.0
-var _fire_left: float = 0.0
+var _grenade_left: float = 0.0
 var _dash_direction := Vector3.ZERO
 var _mouse_active: bool = true
 var _pad_buttons: Dictionary = {}
-@onready var visuals: SurvivorVisuals = $Visuals
 var _hud_tick: float = 0.0
 var _alive: bool = true
 
+@onready var visuals: SurvivorVisuals = $Visuals
+@onready var weapon_controller: WeaponController = $WeaponController
+
 
 func _ready() -> void:
+	weapon_controller.mount(visuals.get_weapon_socket())
+	weapon_controller.state_changed.connect(stats_changed.emit)
+	weapon_controller.projectile_requested.connect(bullet_requested.emit)
+	weapon_controller.sound_requested.connect(sound_requested.emit)
+	weapon_controller.trauma_requested.connect(trauma_requested.emit)
+	weapon_controller.fired.connect(visuals.show_shot)
 	reset_state()
 
 
 func reset_state() -> void:
-	weapons.clear()
-	for definition: Dictionary in WEAPON_DEFINITIONS:
-		var weapon: Dictionary = definition.duplicate(true)
-		weapon["ammo"] = int(weapon["magazine"])
-		weapons.append(weapon)
+	weapon_controller.reset()
 	max_health = 100.0
 	health = max_health
 	kills = 0
 	grenades = 0
 	_grenade_left = 0.0
-	damage_multiplier = 1.0
 	speed_multiplier = 1.0
-	fire_rate_multiplier = 1.0
-	reload_multiplier = 1.0
 	dash_multiplier = 1.0
-	weapon_index = 0
 	dash_cooldown = 0.0
 	dash_remaining = 0.0
 	invulnerability = 0.0
-	_fire_left = 0.0
-	reloading = false
-	reload_left = 0.0
 	_alive = true
 	velocity = Vector3.ZERO
-	_sync_weapon()
 	if is_instance_valid(visuals):
 		visuals.reset_pose()
 	stats_changed.emit()
 
 
 func get_stats() -> Dictionary:
-	var weapon: Dictionary = weapons[weapon_index] if not weapons.is_empty() else WEAPON_DEFINITIONS[0]
-	return {
+	var stats: Dictionary = weapon_controller.current_weapon.get_stats()
+	stats.merge({
 		"health": health,
 		"max_health": max_health,
-		"ammo": ammo,
-		"magazine": magazine_size,
 		"grenades": grenades,
 		"max_grenades": MAX_GRENADES,
-		"reloading": reloading,
-		"reload_progress": 1.0 - reload_left / maxf(reload_duration, 0.01),
-		"weapon": weapon.get("name", "ARMA"),
 		"dash_ready": dash_cooldown <= 0.0,
 		"dash_progress": 1.0 - dash_cooldown / maxf(DASH_COOLDOWN * dash_multiplier, 0.01),
-	}
+	})
+	return stats
 
 
 func _input(event: InputEvent) -> void:
@@ -125,14 +101,14 @@ func _input(event: InputEvent) -> void:
 			KEY_G:
 				try_throw_grenade()
 			KEY_Q:
-				select_weapon((weapon_index + 1) % weapons.size())
+				weapon_controller.cycle_weapon()
 			KEY_1, KEY_2, KEY_3:
 				select_weapon(int(key - KEY_1))
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			select_weapon((weapon_index + 1) % weapons.size())
+			weapon_controller.cycle_weapon()
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			select_weapon((weapon_index + weapons.size() - 1) % weapons.size())
+			weapon_controller.cycle_weapon(-1)
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
 			try_throw_grenade()
 
@@ -141,18 +117,10 @@ func _physics_process(delta: float) -> void:
 	if not _active():
 		return
 	_read_input()
-	_fire_left = maxf(0.0, _fire_left - delta)
+	weapon_controller.advance(delta)
 	_grenade_left = maxf(0.0, _grenade_left - delta)
 	dash_cooldown = maxf(0.0, dash_cooldown - delta)
 	invulnerability = maxf(0.0, invulnerability - delta)
-	if reloading:
-		reload_left = maxf(0.0, reload_left - delta)
-		if reload_left <= 0.0:
-			reloading = false
-			ammo = magazine_size
-			weapons[weapon_index]["ammo"] = ammo
-			_sound("reload_done")
-			stats_changed.emit()
 	if dash_remaining > 0.0:
 		dash_remaining = maxf(0.0, dash_remaining - delta)
 		velocity = _dash_direction * 22.0
@@ -169,7 +137,11 @@ func _physics_process(delta: float) -> void:
 		trigger_firing = Input.get_joy_axis(pad, JOY_AXIS_TRIGGER_RIGHT) > 0.25 or Input.is_joy_button_pressed(pad, JOY_BUTTON_RIGHT_SHOULDER)
 	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or stick_firing or trigger_firing:
 		try_shoot()
-	visuals.animate(delta, aim_direction, velocity.length(), invulnerability, dash_remaining, velocity.normalized(), reloading, 1.0 - reload_left / maxf(reload_duration, 0.01))
+	var magazine: WeaponMagazine = weapon_controller.current_weapon.magazine
+	visuals.animate(
+		delta, aim_direction, velocity.length(), invulnerability, dash_remaining,
+		velocity.normalized(), magazine.reloading, magazine.get_reload_progress()
+	)
 	_hud_tick -= delta
 	if _hud_tick <= 0.0:
 		_hud_tick = 0.08
@@ -199,7 +171,7 @@ func _read_input() -> void:
 		if _pad_pressed(pad, JOY_BUTTON_X):
 			start_reload()
 		if _pad_pressed(pad, JOY_BUTTON_Y):
-			select_weapon((weapon_index + 1) % weapons.size())
+			weapon_controller.cycle_weapon()
 		if _pad_pressed(pad, JOY_BUTTON_B):
 			try_throw_grenade()
 	motion = motion.limit_length(1.0)
@@ -231,7 +203,8 @@ func _update_aim() -> void:
 			var origin: Vector3 = camera.project_ray_origin(cursor)
 			var ray: Vector3 = camera.project_ray_normal(cursor)
 			if absf(ray.y) > 0.0001:
-				var hit: Vector3 = origin + ray * ((visuals.get_muzzle_position().y - origin.y) / ray.y)
+				var muzzle_height: float = weapon_controller.get_muzzle_position().y
+				var hit: Vector3 = origin + ray * ((muzzle_height - origin.y) / ray.y)
 				var offset: Vector3 = hit - global_position
 				offset.y = 0.0
 				if offset.length_squared() > 0.04:
@@ -271,65 +244,20 @@ func try_throw_grenade() -> bool:
 
 
 func try_shoot() -> void:
-	if reloading or dash_remaining > 0.0 or _fire_left > 0.0 or not _alive:
+	if not _active() or dash_remaining > 0.0:
 		return
-	if ammo <= 0:
-		start_reload()
-		return
-	var weapon: Dictionary = weapons[weapon_index]
-	ammo -= 1
-	weapon["ammo"] = ammo
-	_fire_left = float(weapon["interval"]) / fire_rate_multiplier
 	visuals.set_aim(aim_direction)
-	var origin: Vector3 = visuals.get_muzzle_position()
-	# Keep the muzzle on this side of cover when the weapon visually overlaps it.
-	var muzzle_query := PhysicsRayQueryParameters3D.create(Vector3(global_position.x, origin.y, global_position.z), origin, 2)
-	var muzzle_hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(muzzle_query)
-	if not muzzle_hit.is_empty():
-		origin = (muzzle_hit["position"] as Vector3) - aim_direction * 0.03
-	var pellets: int = int(weapon["pellets"])
-	var spread: float = float(weapon["spread"])
-	for pellet: int in range(pellets):
-		var angle: float = randf_range(-spread, spread)
-		if pellets > 1:
-			angle = lerpf(-spread, spread, float(pellet) / float(pellets - 1)) + randf_range(-0.025, 0.025)
-		var direction: Vector3 = aim_direction.rotated(Vector3.UP, angle)
-		bullet_requested.emit(origin, direction, float(weapon["damage"]) * damage_multiplier, float(weapon["speed"]), int(weapon["pierce"]))
-	visuals.show_shot(weapon_index)
-	_sound(["pistol", "shotgun", "smg"][weapon_index])
-	trauma_requested.emit(0.09 if weapon_index == 1 else 0.025)
-	stats_changed.emit()
+	weapon_controller.try_fire(aim_direction, global_position)
 
 
 func start_reload() -> void:
-	if reloading or ammo >= magazine_size or not _alive:
-		return
-	reloading = true
-	reload_left = reload_duration
-	_sound("reload")
-	stats_changed.emit()
+	if _active():
+		weapon_controller.start_reload()
 
 
 func select_weapon(index: int) -> void:
-	if index < 0 or index >= weapons.size() or index == weapon_index:
-		return
-	weapons[weapon_index]["ammo"] = ammo
-	weapon_index = index
-	reloading = false
-	reload_left = 0.0
-	_fire_left = maxf(_fire_left, 0.12)
-	_sync_weapon()
-	_sound("switch")
-	stats_changed.emit()
-
-
-func _sync_weapon() -> void:
-	var weapon: Dictionary = weapons[weapon_index]
-	ammo = int(weapon["ammo"])
-	magazine_size = int(weapon["magazine"])
-	reload_duration = float(weapon["reload"]) * reload_multiplier
-	if is_instance_valid(visuals):
-		visuals.set_weapon(weapon_index)
+	if _active():
+		weapon_controller.select_weapon(index)
 
 
 func try_dash() -> void:
@@ -356,6 +284,7 @@ func take_damage(amount: float) -> void:
 	if health <= 0.0:
 		_alive = false
 		velocity = Vector3.ZERO
+		weapon_controller.stop()
 		visuals.play_death()
 		died.emit()
 
@@ -368,39 +297,22 @@ func heal(amount: float) -> void:
 
 func apply_upgrade(id: String) -> void:
 	match id:
-		"damage", "power":
-			damage_multiplier *= 1.25
 		"speed", "movement":
 			speed_multiplier *= 1.15
-		"fire_rate", "firerate":
-			fire_rate_multiplier *= 1.2
 		"health", "vitality":
 			max_health += 25.0
 			heal(max_health)
 		"heal":
 			heal(45.0)
-		"reload":
-			reload_multiplier *= 0.8
 		"dash":
 			dash_multiplier *= 0.8
-		"magazine", "ammo":
-			for weapon: Dictionary in weapons:
-				weapon["magazine"] = int(ceil(float(weapon["magazine"]) * 1.25))
-				weapon["ammo"] = int(weapon["magazine"])
-		"pierce":
-			for weapon: Dictionary in weapons:
-				weapon["pierce"] = int(weapon["pierce"]) + 1
-	_sync_weapon()
+		_:
+			weapon_controller.apply_upgrade(id)
 	stats_changed.emit()
 
 
 func refill_ammo() -> void:
-	for weapon: Dictionary in weapons:
-		weapon["ammo"] = int(weapon["magazine"])
-	ammo = magazine_size
-	reloading = false
-	reload_left = 0.0
-	stats_changed.emit()
+	weapon_controller.refill()
 
 
 func _sound(kind: String) -> void:

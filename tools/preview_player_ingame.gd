@@ -30,7 +30,7 @@ func _process(dt: float) -> bool:
 	var player: Survivor = game.session.player
 	player.visuals.animate(dt,player.aim_direction,6.4,0.0,0.0,Vector3.RIGHT)
 	if ticks in [20,40]:
-		player._fire_left = 0.0
+		player.weapon_controller.advance(1.0)
 		player.try_shoot()
 	if ticks == 21:
 		root.get_texture().get_image().save_png("res://assets/models/player_technician_ingame.png")

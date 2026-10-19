@@ -8,15 +8,9 @@ var _lower_body: Node3D
 var _upper_body: Node3D
 var _gun: Node3D
 var _gun_rest: Vector3
-var _muzzle: Node3D
-var _flash: MeshInstance3D
-var _weapons: Array[Node3D] = []
 var _dash_materials: Array[StandardMaterial3D] = []
-var _flash_left: float = 0.0
-var _recoil: float = 0.0
 var _aim_left: float = 0.0
 var _dying: bool = false
-var _weapon_index: int = 0
 
 
 func _ready() -> void:
@@ -26,7 +20,6 @@ func _ready() -> void:
 	_upper_body = _model.find_child("UpperBody_Pivot", true, false) as Node3D
 	_gun = _model.find_child("WeaponSocket", true, false) as Node3D
 	_gun_rest = _gun.position
-	_muzzle = _model.find_child("Muzzle", true, false) as Node3D
 	# Imported resources are shared: localize loops and temporary dash emission.
 	var library: AnimationLibrary = _animation.get_animation_library("").duplicate(true) as AnimationLibrary
 	_animation.remove_animation_library("")
@@ -42,7 +35,9 @@ func _ready() -> void:
 			var local_material := source.duplicate() as StandardMaterial3D
 			instance.material_override = local_material
 			_dash_materials.append(local_material)
-	_build_weapons()
+	var imported := _model.find_child("ImportedWeapon_Mesh", true, false) as Node3D
+	if imported != null:
+		imported.hide()
 	reset_pose()
 
 
@@ -51,32 +46,18 @@ func set_aim(direction: Vector3) -> void:
 		rotation.y = atan2(direction.x, direction.z)
 
 
-func set_weapon(index: int) -> void:
-	_weapon_index = clampi(index, 0, 2)
-	for weapon: int in range(_weapons.size()):
-		_weapons[weapon].visible = weapon == _weapon_index
-	_update_muzzle()
+func get_weapon_socket() -> Node3D:
+	return _gun
 
 
-func get_muzzle_position() -> Vector3:
-	return _muzzle.global_position
-
-
-func show_shot(index: int) -> void:
-	if _dying:
-		return
-	set_weapon(index)
-	_flash_left = 0.055
-	_recoil = 0.065 if index == 1 else 0.027
-	_aim_left = 0.35
-	_flash.visible = true
+func show_shot() -> void:
+	if not _dying:
+		_aim_left = 0.35
 
 
 func reset_pose() -> void:
 	_dying = false
 	process_mode = Node.PROCESS_MODE_INHERIT
-	_flash_left = 0.0
-	_recoil = 0.0
 	_aim_left = 0.0
 	position = Vector3.ZERO
 	rotation = Vector3.ZERO
@@ -84,20 +65,16 @@ func reset_pose() -> void:
 	_gun.position = _gun_rest
 	_lower_body.rotation.y = 0.0
 	_upper_body.rotation.y = 0.0
-	_flash.visible = false
 	_animation.speed_scale = 1.0
 	_animation.play("Idle")
 	_animation.advance(0.0)
 	_set_dash_glow(false)
-	set_weapon(_weapon_index)
 
 
 func animate(delta: float, direction: Vector3, movement_speed: float, invulnerability: float, dash_remaining: float, movement_direction: Vector3 = Vector3.ZERO, reloading: bool = false, reload_progress: float = 0.0) -> void:
 	if _dying:
 		return
-	_flash_left = maxf(0.0, _flash_left - delta)
 	_aim_left = maxf(0.0, _aim_left - delta)
-	_recoil = move_toward(_recoil, 0.0, delta * 0.6)
 	set_aim(direction)
 	var moving: bool = movement_speed > 0.2
 	var backwards: bool = moving and movement_direction.dot(direction) < -0.25
@@ -120,8 +97,6 @@ func animate(delta: float, direction: Vector3, movement_speed: float, invulnerab
 		_play_clip(&"Walk", clampf(movement_speed / 4.3, 0.55, 2.2) * (-1.0 if backwards else 1.0))
 	else:
 		_play_clip(&"Aim" if _aim_left > 0.0 else &"Idle", 1.0)
-	_gun.position = _gun_rest + Vector3(0, 0, -_recoil)
-	_flash.visible = _flash_left > 0.0
 	visible = invulnerability <= 0.0 or dash_remaining > 0.0 or fmod(invulnerability, 0.12) < 0.075
 	_set_dash_glow(dash_remaining > 0.0)
 
@@ -131,7 +106,6 @@ func play_death() -> float:
 		return 0.0
 	_dying = true
 	visible = true
-	_flash.visible = false
 	_gun.position = _gun_rest
 	_lower_body.rotation.y = 0.0
 	_set_dash_glow(false)
@@ -182,62 +156,3 @@ func _set_dash_glow(enabled: bool) -> void:
 		material.emission_enabled = enabled
 		material.emission = Color(0.1, 0.7, 0.8)
 		material.emission_energy_multiplier = 0.7
-
-
-func _material(color: Color, emission: bool = false) -> StandardMaterial3D:
-	var material := StandardMaterial3D.new()
-	material.albedo_color = color
-	material.roughness = 0.82
-	if emission:
-		material.emission_enabled = true
-		material.emission = color
-		material.emission_energy_multiplier = 2.0
-	return material
-
-
-func _mesh(parent: Node3D, size: Vector3, location: Vector3, material: Material) -> MeshInstance3D:
-	var instance := MeshInstance3D.new()
-	var box := BoxMesh.new()
-	box.size = size
-	instance.mesh = box
-	instance.material_override = material
-	instance.position = location
-	parent.add_child(instance)
-	return instance
-
-
-func _build_weapons() -> void:
-	var imported := _model.find_child("ImportedWeapon_Mesh", true, false) as Node3D
-	if imported != null:
-		imported.hide()
-	var metal: Material = _material(Color("36494e"))
-	var dark: Material = _material(Color("182329"))
-	var accent: Material = _material(Color("cb783d"))
-	for index: int in range(3):
-		var weapon := Node3D.new()
-		weapon.name = ["Pistol", "Shotgun", "SubmachineGun"][index]
-		_gun.add_child(weapon)
-		_weapons.append(weapon)
-		_mesh(weapon, Vector3(0.075, 0.09, 0.23), Vector3(0, 0.035, 0.09), metal)
-		_mesh(weapon, Vector3(0.055, 0.11, 0.065), Vector3(0, -0.045, 0.02), dark)
-		if index == 0:
-			_mesh(weapon, Vector3(0.04, 0.04, 0.09), Vector3(0, 0.035, 0.24), dark)
-		elif index == 1:
-			_mesh(weapon, Vector3(0.10, 0.07, 0.37), Vector3(0, 0.035, 0.28), dark)
-			_mesh(weapon, Vector3(0.11, 0.065, 0.12), Vector3(0, -0.005, 0.235), accent)
-			_mesh(weapon, Vector3(0.085, 0.08, 0.13), Vector3(0, 0.015, -0.075), dark)
-		else:
-			_mesh(weapon, Vector3(0.055, 0.055, 0.18), Vector3(0, 0.035, 0.27), dark)
-			_mesh(weapon, Vector3(0.065, 0.15, 0.08), Vector3(0, -0.07, 0.12), dark)
-			_mesh(weapon, Vector3(0.065, 0.055, 0.12), Vector3(0, 0.02, -0.06), accent)
-	_flash = _mesh(_gun, Vector3(0.10, 0.10, 0.14), Vector3.ZERO, _material(Color(1.0, 0.79, 0.2), true))
-	_flash.name = &"MuzzleFlash"
-	_flash.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_flash.hide()
-
-
-func _update_muzzle() -> void:
-	if _muzzle == null or _flash == null:
-		return
-	_muzzle.position = Vector3(0, 0.035, [0.285, 0.465, 0.36][_weapon_index])
-	_flash.position = _gun.to_local(_muzzle.global_position)

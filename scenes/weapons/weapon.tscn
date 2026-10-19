@@ -1,0 +1,43 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon.gd" id="weapon"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_magazine.gd" id="magazine"]
+[ext_resource type="Script" path="res://scripts/weapons/projectile_emitter.gd" id="emitter"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_presentation.gd" id="presentation"]
+
+[sub_resource type="StandardMaterial3D" id="FlashMaterial"]
+albedo_color = Color(1, 0.79, 0.2, 1)
+emission_enabled = true
+emission = Color(1, 0.79, 0.2, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="BoxMesh" id="FlashMesh"]
+material = SubResource("FlashMaterial")
+size = Vector3(0.10, 0.10, 0.14)
+
+[node name="Weapon" type="Node3D" node_paths=PackedStringArray("magazine", "emitter", "presentation")]
+script = ExtResource("weapon")
+magazine = NodePath("Magazine")
+emitter = NodePath("Emitter")
+presentation = NodePath("Presentation")
+
+[node name="Magazine" type="Node" parent="."]
+script = ExtResource("magazine")
+
+[node name="Emitter" type="Node" parent="."]
+script = ExtResource("emitter")
+
+[node name="Presentation" type="Node3D" parent="."]
+script = ExtResource("presentation")
+
+[node name="RecoilRoot" type="Node3D" parent="Presentation"]
+
+[node name="Muzzle" type="Marker3D" parent="Presentation/RecoilRoot"]
+position = Vector3(0, 0.035, 0.285)
+
+[node name="Flash" type="MeshInstance3D" parent="Presentation/RecoilRoot/Muzzle"]
+visible = false
+cast_shadow = 0
+mesh = SubResource("FlashMesh")
+
+[node name="ModelSlot" type="Node3D" parent="Presentation/RecoilRoot"]

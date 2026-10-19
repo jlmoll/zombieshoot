@@ -102,3 +102,7 @@ independientes, tres armas, recarga al caminar y caída al morir. Consulta
 
 La arena se construye desde `scenes/world/arena.tscn`, con piezas reutilizables,
 marcadores de aparición y límites configurables. Consulta la [guía de edición de mapas](docs/map_authoring.md).
+
+## Armas editables
+
+Pistola, escopeta y subfusil son escenas con modelo 3D, boca de disparo y configuración propia en el inspector. Consulta [estructura, edición y extensión de armas](docs/weapons.md).
