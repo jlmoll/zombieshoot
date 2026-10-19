@@ -19,14 +19,11 @@ var _audio: GameAudio
 var _navigation: HordeNavigation
 
 
-func configure_map(map: Arena, audio: GameAudio, camera_rig: IsometricCameraRig) -> void:
+func configure(map: Arena, audio: GameAudio, camera_rig: IsometricCameraRig) -> void:
 	player.global_position = map.player_spawn.global_position
 	waves.map = map
 	combat.playable_area = map.playable_area
-	configure(map.navigation, audio, camera_rig)
-
-
-func configure(navigation: HordeNavigation, audio: GameAudio, camera_rig: IsometricCameraRig) -> void:
+	var navigation: HordeNavigation = map.navigation
 	_audio = audio
 	_navigation = navigation
 	navigation.set_target(player)

@@ -45,7 +45,7 @@ func _new_session() -> void:
 	session_slot.add_child(session)
 	arena = map_scene.instantiate()
 	session.add_child(arena)
-	session.configure_map(arena, audio, camera_rig)
+	session.configure(arena, audio, camera_rig)
 	session.wave_started.connect(_on_wave_started)
 	session.wave_cleared.connect(_on_wave_cleared)
 	session.player.died.connect(_on_player_died)

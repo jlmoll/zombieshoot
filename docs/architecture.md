@@ -59,7 +59,7 @@ Los nodos y widgets permanentes se declaran en `.tscn`. La geometría de la aren
 | `GameHUD` y sus vistas | Mostrar información e intenciones del jugador | Diccionarios de estadísticas y señales de menú |
 | `SaveData` | Leer y escribir récord y sonido | `user://dead_shift.cfg` |
 
-`RunSession.configure()` es el punto de conexión de los servicios de una partida. Por ejemplo, conecta `Survivor.bullet_requested` con `CombatService.spawn_player_bullet`; el superviviente puede instanciarse y probarse sin una partida global. Los impactos de balas y las detonaciones de granadas también se comunican mediante señales.
+`RunSession.configure(map, audio, camera_rig)` es el único punto de inicialización de una partida: sitúa al jugador en su marcador, asigna el mapa y sus límites y conecta todos los servicios antes de `start()`. Por ejemplo, conecta `Survivor.bullet_requested` con `CombatService.spawn_player_bullet`; el superviviente puede instanciarse y probarse sin una partida global. Los impactos de balas y las detonaciones de granadas también se comunican mediante señales.
 
 Los grupos `player`, `enemies`, `projectiles` y `grenades` sirven para inspección y pruebas; la lógica de producción usa referencias y contenedores explícitos. Un zombi separa su movimiento de sus hermanos en `Enemies`, evitando acoplar dos poblaciones distintas.
 
