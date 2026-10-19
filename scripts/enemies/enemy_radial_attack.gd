@@ -17,6 +17,6 @@ func execute(
 	var count: int = enraged_count if enraged else projectile_count
 	for index in range(count):
 		var angle: float = TAU * float(index) / float(count) + phase * rotation_rate
-		projectile_requested.emit(origin, Vector3(cos(angle), 0, sin(angle)),
+		emit_projectile(origin, Vector3(cos(angle), 0, sin(angle)),
 			damage, projectile_speed)
 	trauma_requested.emit(trauma)

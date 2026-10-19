@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WaveDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/waves/wave_definition.gd" id="wave"]
+
+[ext_resource type="Script" path="res://scripts/waves/wave_spawn_rule.gd" id="rule"]
+
+[sub_resource type="Resource" id="runner"]
+script = ExtResource("rule")
+enemy_kind = "runner"
+every_nth_spawn = 4
+
+[resource]
+script = ExtResource("wave")
+enemy_count = 19
+spawn_interval = 0.670
+composition = Array[ExtResource("rule")]([SubResource("runner")])
+

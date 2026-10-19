@@ -19,5 +19,5 @@ func execute(
 		var angle: float = 0.0
 		if projectile_count > 1:
 			angle = lerpf(-spread, spread, float(index) / float(projectile_count - 1))
-		projectile_requested.emit(origin, direction.rotated(Vector3.UP, angle),
+		emit_projectile(origin, direction.rotated(Vector3.UP, angle),
 			damage, projectile_speed)

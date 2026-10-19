@@ -8,6 +8,10 @@ signal fired
 signal projectile_requested(
 	origin: Vector3, direction: Vector3, damage: float, speed: float, pierce: int
 )
+signal projectile_spawn_requested(
+	origin: Vector3, direction: Vector3, damage: float, speed: float, pierce: int,
+	context: DamageContext, scene: PackedScene
+)
 signal sound_requested(kind: String)
 signal trauma_requested(amount: float)
 
@@ -15,6 +19,7 @@ signal trauma_requested(amount: float)
 @export var display_name: String = "ARMA"
 @export var weapon_id: StringName = &"weapon"
 @export_group("Ballistics")
+@export var projectile_scene: PackedScene = preload("res://scenes/projectiles/player_bullet.tscn")
 @export_range(0.1, 1000.0) var damage: float = 30.0
 @export_range(0.01, 10.0) var fire_interval: float = 0.22
 @export_range(1.0, 200.0) var projectile_speed: float = 36.0
@@ -44,6 +49,7 @@ var fire_rate_multiplier: float = 1.0
 var reload_multiplier: float = 1.0
 var penetration_bonus: int = 0
 var cooldown_remaining: float = 0.0
+var wielder: Node
 
 
 func _ready() -> void:
@@ -53,10 +59,13 @@ func _ready() -> void:
 	magazine.changed.connect(state_changed.emit)
 	magazine.reload_finished.connect(_on_reload_finished)
 	emitter.projectile_requested.connect(projectile_requested.emit)
+	emitter.projectile_spawn_requested.connect(projectile_spawn_requested.emit)
 	reset()
 
 
 func _get_configuration_warnings() -> PackedStringArray:
+	if projectile_scene == null:
+		return ["Assign a projectile scene with a Bullet root."]
 	if magazine == null or emitter == null or presentation == null:
 		return ["Assign Magazine, Emitter and Presentation components."]
 	return []
@@ -98,7 +107,8 @@ func try_fire(heading: Vector3, wielder_position: Vector3) -> bool:
 		origin = (hit["position"] as Vector3) - direction * 0.03
 	emitter.emit_shot(
 		origin, direction, damage * damage_multiplier, projectile_speed,
-		penetration + penetration_bonus, pellets, spread, pellet_jitter
+		penetration + penetration_bonus, pellets, spread, pellet_jitter,
+		DamageContext.create(self, wielder, _get_wielder_team(), weapon_id), projectile_scene
 	)
 	presentation.play_shot(recoil_amount, flash_duration, recoil_recovery)
 	sound_requested.emit(shot_sound)
@@ -106,6 +116,12 @@ func try_fire(heading: Vector3, wielder_position: Vector3) -> bool:
 	fired.emit()
 	state_changed.emit()
 	return true
+
+
+func _get_wielder_team() -> DamageContext.Team:
+	if is_instance_valid(wielder) and wielder.has_method("get_damage_team"):
+		return wielder.get_damage_team()
+	return DamageContext.Team.PLAYER
 
 
 func start_reload() -> bool:

@@ -1,0 +1,24 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/projectile.gd" id="script"]
+
+[sub_resource type="StandardMaterial3D" id="material"]
+shading_mode = 0
+albedo_color = Color(1, 0.83, 0.3, 1)
+emission_enabled = true
+emission = Color(1, 0.83, 0.3, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="CapsuleMesh" id="mesh"]
+material = SubResource("material")
+radius = 0.045
+height = 0.4
+
+[node name="PlayerBullet" type="Node3D" groups=["projectiles"]]
+top_level = true
+script = ExtResource("script")
+
+[node name="Visual" type="MeshInstance3D" parent="."]
+rotation = Vector3(1.5707963, 0, 0)
+cast_shadow = 0
+mesh = SubResource("mesh")

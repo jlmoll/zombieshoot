@@ -5,6 +5,10 @@ extends CharacterBody3D
 signal stats_changed
 signal died
 signal bullet_requested(origin: Vector3, direction: Vector3, damage: float, speed: float, pierce: int)
+signal projectile_spawn_requested(
+	origin: Vector3, direction: Vector3, damage: float, speed: float, pierce: int,
+	context: DamageContext, scene: PackedScene
+)
 signal grenade_requested(origin: Vector3, direction: Vector3, distance: float)
 signal sound_requested(kind: String)
 signal particles_requested(at: Vector3, color: Color, count: int)
@@ -19,8 +23,20 @@ const MAX_GRENADES: int = 4
 const GRENADES_PER_WAVE: int = 2
 const GRENADE_COOLDOWN: float = 0.35
 
-var max_health: float = 100.0
-var health: float = 100.0
+@export var team: DamageContext.Team = DamageContext.Team.PLAYER
+@export var health_component: HealthComponent
+
+var max_health: float:
+	get:
+		return health_component.maximum
+	set(value):
+		health_component.set_maximum(value)
+var health: float:
+	get:
+		return health_component.current
+	set(value):
+		health_component.set_current(value)
+var last_damage_context: DamageContext
 var dash_cooldown: float = 0.0
 var dash_remaining: float = 0.0
 var kills: int = 0
@@ -41,10 +57,15 @@ var _alive: bool = true
 
 
 func _ready() -> void:
+	assert(health_component != null, "Survivor needs a HealthComponent scene.")
+	health_component.health_changed.connect(_on_health_changed)
+	health_component.died.connect(_on_health_depleted)
 	controls.command_requested.connect(_on_input_command)
+	weapon_controller.wielder = self
 	weapon_controller.mount(visuals.get_weapon_socket())
 	weapon_controller.state_changed.connect(stats_changed.emit)
 	weapon_controller.projectile_requested.connect(bullet_requested.emit)
+	weapon_controller.projectile_spawn_requested.connect(projectile_spawn_requested.emit)
 	weapon_controller.sound_requested.connect(sound_requested.emit)
 	weapon_controller.trauma_requested.connect(trauma_requested.emit)
 	weapon_controller.fired.connect(visuals.show_shot)
@@ -53,8 +74,8 @@ func _ready() -> void:
 
 func reset_state() -> void:
 	weapon_controller.reset()
-	max_health = 100.0
-	health = max_health
+	health_component.reset(100.0)
+	last_damage_context = null
 	kills = 0
 	grenades = 0
 	_grenade_left = 0.0
@@ -97,7 +118,7 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity = move_direction * BASE_SPEED * speed_multiplier
 	move_and_slide()
-	position.y = 0.0
+	global_position.y = 0.0
 	_update_aim()
 	if controls.wants_to_fire():
 		try_shoot()
@@ -147,17 +168,14 @@ func _update_aim() -> void:
 		aim_direction = (SCREEN_RIGHT * stick.x + SCREEN_DOWN * stick.y).normalized()
 	if controls.mouse_aim_active:
 		var camera: Camera3D = get_viewport().get_camera_3d()
-		if camera != null:
-			var cursor: Vector2 = get_viewport().get_mouse_position()
-			var origin: Vector3 = camera.project_ray_origin(cursor)
-			var ray: Vector3 = camera.project_ray_normal(cursor)
-			if absf(ray.y) > 0.0001:
-				var muzzle_height: float = weapon_controller.get_muzzle_position().y
-				var hit: Vector3 = origin + ray * ((muzzle_height - origin.y) / ray.y)
-				var offset: Vector3 = hit - global_position
-				offset.y = 0.0
-				if offset.length_squared() > 0.04:
-					aim_direction = offset.normalized()
+		var hit: Variant = CursorProjection.project(
+			camera, get_viewport().get_mouse_position(), weapon_controller.get_muzzle_position().y
+		)
+		if hit != null:
+			var offset: Vector3 = hit - global_position
+			offset.y = 0.0
+			if offset.length_squared() > 0.04:
+				aim_direction = offset.normalized()
 	visuals.set_aim(aim_direction)
 
 
@@ -174,16 +192,13 @@ func try_throw_grenade() -> bool:
 	var distance: float = 9.0
 	if controls.mouse_aim_active:
 		var camera: Camera3D = get_viewport().get_camera_3d()
-		if camera != null:
-			var cursor: Vector2 = get_viewport().get_mouse_position()
-			var origin: Vector3 = camera.project_ray_origin(cursor)
-			var ray: Vector3 = camera.project_ray_normal(cursor)
-			if absf(ray.y) > 0.0001:
-				var offset: Vector3 = origin + ray * (-origin.y / ray.y) - global_position
-				offset.y = 0.0
-				distance = clampf(offset.length(), 1.5, 10.0)
-				if offset.length_squared() > 0.01:
-					heading = offset.normalized()
+		var hit: Variant = CursorProjection.project(camera, get_viewport().get_mouse_position())
+		if hit != null:
+			var offset: Vector3 = hit - global_position
+			offset.y = 0.0
+			distance = clampf(offset.length(), 1.5, 10.0)
+			if offset.length_squared() > 0.01:
+				heading = offset.normalized()
 	grenades -= 1
 	_grenade_left = GRENADE_COOLDOWN
 	grenade_requested.emit(global_position + Vector3.UP * 0.95, heading, distance)
@@ -221,42 +236,56 @@ func try_dash() -> void:
 	stats_changed.emit()
 
 
-func take_damage(amount: float) -> void:
+func get_damage_team() -> DamageContext.Team:
+	return team
+
+
+func take_damage(amount: float, context: DamageContext = null) -> void:
 	if invulnerability > 0.0 or dash_remaining > 0.0 or not _alive or amount <= 0.0:
 		return
-	health = maxf(0.0, health - amount)
+	if context != null and not context.can_damage(self):
+		return
+	last_damage_context = context
+	health_component.take_damage(amount)
 	invulnerability = 0.8
 	_sound("hurt")
 	trauma_requested.emit(0.38)
 	particles_requested.emit(global_position + Vector3.UP * 0.7, Color(1.0, 0.35, 0.2), 12)
+
+
+func _on_health_changed(_current: float, _maximum: float) -> void:
 	stats_changed.emit()
-	if health <= 0.0:
-		_alive = false
-		velocity = Vector3.ZERO
-		weapon_controller.stop()
-		visuals.play_death()
-		died.emit()
+
+
+func _on_health_depleted() -> void:
+	if not _alive:
+		return
+	_alive = false
+	velocity = Vector3.ZERO
+	weapon_controller.stop()
+	visuals.play_death()
+	died.emit()
 
 
 func heal(amount: float) -> void:
 	if _alive:
-		health = minf(max_health, health + maxf(amount, 0.0))
-		stats_changed.emit()
+		health_component.heal(amount)
 
 
 func apply_upgrade(id: String) -> void:
-	match id:
-		"speed", "movement":
-			speed_multiplier *= 1.15
-		"health", "vitality":
-			max_health += 25.0
-			heal(max_health)
-		"heal":
-			heal(45.0)
-		"dash":
-			dash_multiplier *= 0.8
-		_:
-			weapon_controller.apply_upgrade(id)
+	var definition: PerkDefinition = PerkCatalog.find(id)
+	if definition != null:
+		apply_perk(definition)
+
+
+func apply_perk(definition: PerkDefinition) -> void:
+	if definition == null:
+		return
+	speed_multiplier *= definition.move_speed_multiplier
+	dash_multiplier *= definition.dash_cooldown_multiplier
+	max_health += definition.max_health_bonus
+	heal(max_health if definition.full_heal else definition.heal_amount)
+	weapon_controller.apply_perk(definition)
 	stats_changed.emit()
 
 

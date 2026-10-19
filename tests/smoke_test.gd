@@ -4,13 +4,15 @@ extends Node
 
 func run(game: Game) -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	game.audio.muted = true
 	game.start_run()
 	await get_tree().process_frame
 	var session: RunSession = game.session
 	assert(is_instance_valid(session.player) and session.player.health > 0)
 	for kind in ["walker", "runner", "brute", "spitter", "boss"]:
 		var enemy: Zombie = session.enemies.spawn(kind, Vector3(5, 0, -4), session.waves.wave)
-		enemy.take_damage(100000)
+		var player: Survivor = session.player
+		enemy.take_damage(100000, DamageContext.create(player, player, player.get_damage_team(), &"smoke"))
 	await get_tree().process_frame
 	assert(session.kills == 5, "Enemy kill callback fires once per archetype")
 	session.combat.spawn_player_bullet(Vector3(0, 0.7, 0), Vector3.RIGHT, 10, 20)
@@ -27,4 +29,9 @@ func run(game: Game) -> void:
 	game.resume_run()
 	assert(not get_tree().paused)
 	print("SMOKE TEST PASSED: arena, five enemies, projectiles, damage, healing, upgrades, pickups, pause")
-	get_tree().quit(0)
+	var tree: SceneTree = get_tree()
+	reparent(tree.root)
+	game.queue_free()
+	await tree.process_frame
+	await tree.process_frame
+	tree.quit(0)

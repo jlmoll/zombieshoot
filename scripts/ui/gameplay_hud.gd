@@ -45,7 +45,7 @@ func update_stats(data: Dictionary) -> void:
 	health_label.text = "INTEGRIDAD  %d / %d" % [ceili(hp), ceili(max_hp)]
 	health_label.modulate = RED if hp / max_hp < 0.3 else WHITE
 	score_label.text = "%06d" % int(data.get("score", 0))
-	wave_label.text = "OLEADA %02d / 08" % int(data.get("wave", 1))
+	wave_label.text = "OLEADA %02d / %02d" % [int(data.get("wave", 1)), int(data.get("wave_count", 8))]
 	enemies_label.text = "HOSTILES  %02d" % int(data.get("enemies", 0))
 	var reloading: bool = bool(data.get("reloading", false))
 	ammo_label.text = "RECARGANDO…" if reloading else "%02d / %02d" % [int(data.get("ammo", 0)), int(data.get("magazine", 0))]

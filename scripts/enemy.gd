@@ -4,6 +4,10 @@ extends CharacterBody3D
 ## Base enemy actor. Scenes configure stats and compose movement, attacks and visuals.
 
 signal enemy_bullet_requested(origin: Vector3, direction: Vector3, damage: float, speed: float)
+signal projectile_spawn_requested(
+	origin: Vector3, direction: Vector3, damage: float, speed: float, pierce: int,
+	context: DamageContext, scene: PackedScene
+)
 signal sound_requested(kind: String)
 signal particles_requested(at: Vector3, color: Color, count: int)
 signal trauma_requested(amount: float)
@@ -11,6 +15,7 @@ signal defeated(enemy: Node3D)
 
 @export_group("Identity and stats")
 @export var kind: String = "walker"
+@export var team: DamageContext.Team = DamageContext.Team.ENEMY
 @export_range(1.0, 10000.0) var base_health: float = 36.0
 @export_range(0.0, 1.0) var health_per_wave: float = 0.105
 @export_range(0.0, 30.0) var speed: float = 2.1
@@ -43,9 +48,19 @@ signal defeated(enemy: Node3D)
 @export var movement: EnemyMovement
 @export var combat: EnemyCombat
 @export var attack_origin: Marker3D
+@export var health_component: HealthComponent
 
-var health: float = 36.0
-var max_health: float = 36.0
+var health: float:
+	get:
+		return health_component.current
+	set(value):
+		health_component.set_current(value)
+var max_health: float:
+	get:
+		return health_component.maximum
+	set(value):
+		health_component.set_maximum(value)
+var last_damage_context: DamageContext
 var wave_number: int = 1
 var dead: bool = false
 var target: Node3D
@@ -64,13 +79,17 @@ func _ready() -> void:
 		set_physics_process(false)
 		return
 	assert(visuals != null and movement != null and combat != null and attack_origin != null)
+	assert(health_component != null, "Zombie needs a HealthComponent scene.")
+	health_component.died.connect(_die)
 	if not _configured:
 		configure_wave(wave_number)
 	visuals.reset_health()
 	_clock = randf() * TAU
 	movement.navigation = navigation
 	movement.neighbors = neighbors
+	combat.carrier = self
 	combat.projectile_requested.connect(enemy_bullet_requested.emit)
+	combat.projectile_spawn_requested.connect(projectile_spawn_requested.emit)
 	combat.particles_requested.connect(particles_requested.emit)
 	combat.trauma_requested.connect(trauma_requested.emit)
 	combat.sound_requested.connect(sound_requested.emit)
@@ -115,38 +134,59 @@ func _physics_process(delta: float) -> void:
 		_contact_remaining = contact_interval
 		visuals.play_attack()
 		if target.has_method("take_damage"):
-			target.take_damage(contact_damage)
+			var context := DamageContext.create(self, self, team, &"contact")
+			target.take_damage(contact_damage, context.for_hit(target.global_position, to_target))
 
 
 func _get_configuration_warnings() -> PackedStringArray:
 	if visuals == null or movement == null or combat == null or attack_origin == null:
 		return ["Assign Visuals, Movement, Combat and AttackOrigin components."]
+	if health_component == null:
+		return ["Assign a HealthComponent scene."]
 	return []
 
 
 func configure_wave(wave: int) -> void:
 	wave_number = maxi(1, wave)
-	max_health = base_health * (1.0 + float(wave_number - 1) * health_per_wave)
-	health = max_health
+	health_component.reset(base_health * (1.0 + float(wave_number - 1) * health_per_wave))
+	last_damage_context = null
 	_configured = true
 	_refresh_dimensions()
 	if visuals != null and visuals.is_node_ready():
 		visuals.reset_health()
 
 
-func take_damage(amount: float) -> void:
+func get_damage_team() -> DamageContext.Team:
+	return team
+
+
+func take_damage(amount: float, context: DamageContext = null) -> void:
 	if dead or amount <= 0.0:
 		return
-	health = maxf(0.0, health - amount)
+	if context != null and not context.can_damage(self):
+		return
+	last_damage_context = context
+	health_component.take_damage(amount)
+	if dead:
+		return
 	_flash = hit_flash_duration
-	if is_instance_valid(target):
-		var away: Vector3 = global_position - target.global_position
-		away.y = 0.0
-		_knockback += away.normalized() * knockback_strength
+	var away := Vector3.ZERO
+	if context != null:
+		away = context.hit_direction
+	if away.is_zero_approx() and is_instance_valid(target):
+		away = global_position - target.global_position
+	away.y = 0.0
+	_knockback += away.normalized() * knockback_strength
 	if is_instance_valid(visuals):
 		visuals.show_health(health, max_health)
-	if health <= 0.0:
-		_die()
+
+
+func heal(amount: float) -> void:
+	if dead:
+		return
+	health_component.heal(amount)
+	if is_instance_valid(visuals):
+		visuals.show_health(health, max_health)
 
 
 func _refresh_dimensions() -> void:
@@ -163,6 +203,8 @@ func _refresh_dimensions() -> void:
 
 
 func _die() -> void:
+	if dead:
+		return
 	dead = true
 	collision_layer = 0
 	collision_mask = 0

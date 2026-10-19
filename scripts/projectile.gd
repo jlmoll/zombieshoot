@@ -1,59 +1,62 @@
+@tool
 class_name Bullet
 extends Node3D
-## Swept rays prevent tunnelling even at high projectile speed or low framerates.
+## Scene-authored visuals; swept world-space rays prevent high-speed tunnelling.
 
 signal impact_requested(at: Vector3, color: Color, count: int)
 
+@export_range(0.1, 1000.0) var damage: float = 10.0
+@export_range(0.1, 200.0) var speed: float = 30.0
+@export_range(0, 100) var pierce: int = 0
+@export_range(0.01, 30.0) var lifetime: float = 2.5
+@export_flags_3d_physics var hit_mask: int = (
+	GameRules.WALL_LAYER | GameRules.ENEMY_LAYER | GameRules.PLAYER_LAYER
+)
+@export var impact_color := Color(0.8, 1.0, 0.35)
+
 var direction := Vector3.FORWARD
-var damage: float = 10.0
-var speed: float = 30.0
-var friendly: bool = true
-var pierce: int = 0
-var lifetime: float = 2.5
+var damage_context: DamageContext
 var _excluded: Array[RID] = []
 var _configured: bool = false
-var _visual: MeshInstance3D
 
 
-func configure(origin: Vector3, heading: Vector3, hit_damage: float, travel_speed: float, is_friendly: bool = true, penetration: int = 0) -> void:
-	position = origin
+func configure(
+		origin: Vector3, heading: Vector3, hit_damage: float, travel_speed: float,
+		context: DamageContext = null, penetration: int = 0
+) -> void:
+	# Creation services add the scene first: every origin and heading is global.
+	global_position = origin
 	direction = heading.normalized()
 	damage = hit_damage
 	speed = travel_speed
-	friendly = is_friendly
+	damage_context = context if context != null else DamageContext.new()
 	pierce = penetration
+	_excluded.clear()
+	var instigator := damage_context.get_instigator() as CollisionObject3D
+	if instigator != null and not damage_context.friendly_fire:
+		_excluded.append(instigator.get_rid())
 	_configured = true
 	if direction.length_squared() > 0.001:
-		rotation.y = atan2(direction.x, direction.z)
-	if is_instance_valid(_visual):
-		_apply_material()
+		global_rotation.y = atan2(direction.x, direction.z)
+	reset_physics_interpolation()
 
 
-func _ready() -> void:
-	_visual = MeshInstance3D.new()
-	var mesh := CapsuleMesh.new()
-	mesh.radius = 0.045 if friendly else 0.13
-	mesh.height = 0.4 if friendly else 0.28
-	_visual.mesh = mesh
-	_visual.rotation.x = PI * 0.5
-	_visual.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(_visual)
-	_apply_material()
+func _get_configuration_warnings() -> PackedStringArray:
+	return get_configuration_errors()
 
 
-func _apply_material() -> void:
-	var material := StandardMaterial3D.new()
-	var color := Color(1.0, 0.83, 0.3) if friendly else Color(1.0, 0.24, 0.4)
-	material.albedo_color = color
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.emission_enabled = true
-	material.emission = color
-	material.emission_energy_multiplier = 2.0
-	_visual.material_override = material
+func get_configuration_errors() -> PackedStringArray:
+	var errors := PackedStringArray()
+	var visual := get_node_or_null("Visual") as MeshInstance3D
+	if visual == null or visual.mesh == null:
+		errors.append("Projectile scene needs a Visual MeshInstance3D with a mesh.")
+	if damage <= 0.0 or speed <= 0.0 or lifetime <= 0.0 or pierce < 0 or hit_mask == 0:
+		errors.append("Projectile damage, speed, lifetime and collision mask must be positive.")
+	return errors
 
 
 func _physics_process(delta: float) -> void:
-	if not _configured:
+	if Engine.is_editor_hint() or not _configured:
 		return
 	lifetime -= delta
 	if lifetime <= 0.0:
@@ -61,33 +64,28 @@ func _physics_process(delta: float) -> void:
 		return
 	var start: Vector3 = global_position
 	var end: Vector3 = start + direction * speed * delta
-	var mask: int = GameRules.WALL_LAYER | (GameRules.ENEMY_LAYER if friendly else GameRules.PLAYER_LAYER)
-	# Repeat after penetration, excluding each struck body exactly once.
-	for attempt: int in range(16):
-		var query := PhysicsRayQueryParameters3D.create(start, end, mask, _excluded)
+	# Excluding skipped allies and pierced bodies makes every body hit at most once.
+	while true:
+		var query := PhysicsRayQueryParameters3D.create(start, end, hit_mask, _excluded)
 		query.hit_from_inside = true
 		var result: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
 		if result.is_empty():
 			global_position = end
 			return
-		var collider: Object = result["collider"] as Object
+		var collider := result["collider"] as Node
 		var impact: Vector3 = result["position"]
 		global_position = impact
 		if collider != null and collider.has_method("take_damage"):
-			collider.call("take_damage", damage)
-			_impact(impact, Color(0.8, 1.0, 0.35) if friendly else Color(1.0, 0.3, 0.25), 3)
-			if pierce > 0 and friendly:
+			if not damage_context.can_damage(collider):
+				_excluded.append(result["rid"])
+				continue
+			collider.call("take_damage", damage, damage_context.for_hit(impact, direction))
+			impact_requested.emit(impact, impact_color, 3)
+			if pierce > 0:
 				pierce -= 1
-				var body_rid: RID = result["rid"]
-				_excluded.append(body_rid)
-				start = impact + direction * 0.001
+				_excluded.append(result["rid"])
 				continue
 		else:
-			_impact(impact, Color(1.0, 0.77, 0.36), 3)
+			impact_requested.emit(impact, Color(1.0, 0.77, 0.36), 3)
 		queue_free()
 		return
-	global_position = end
-
-
-func _impact(point: Vector3, color: Color, count: int) -> void:
-	impact_requested.emit(point, color, count)

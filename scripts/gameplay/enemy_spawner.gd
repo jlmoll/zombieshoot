@@ -1,8 +1,10 @@
+@tool
 class_name EnemySpawner
 extends Node3D
 ## Factory, dependency wiring and ownership of this run's enemies.
 
 signal enemy_defeated(enemy: Node3D)
+signal spawn_failed(message: String)
 
 @export var enemy_scenes: Dictionary[String, PackedScene] = {
 	"walker": preload("res://scenes/enemies/walker.tscn"),
@@ -21,11 +23,16 @@ var _serial: int = 0
 
 
 func spawn(kind: String, at: Vector3, wave: int) -> Zombie:
-	var scene: PackedScene = enemy_scenes.get(kind, enemy_scenes.get("walker"))
+	var scene: PackedScene = enemy_scenes.get(kind)
 	if scene == null:
-		push_error("EnemySpawner has no scene for %s and no walker fallback." % kind)
+		spawn_failed.emit("EnemySpawner has no registered scene for '%s'." % kind)
 		return null
-	var enemy := scene.instantiate() as Zombie
+	var instance := scene.instantiate()
+	if not instance is Zombie:
+		instance.free()
+		spawn_failed.emit("Enemy '%s' scene root must be a Zombie." % kind)
+		return null
+	var enemy := instance as Zombie
 	_serial += 1
 	enemy.name = "%s_%03d" % [kind.to_pascal_case(), _serial]
 	enemy.target = player
@@ -34,7 +41,7 @@ func spawn(kind: String, at: Vector3, wave: int) -> Zombie:
 	enemy.neighbors = get_children
 	enemy.position = to_local(at)
 	enemy.defeated.connect(enemy_defeated.emit)
-	enemy.enemy_bullet_requested.connect(combat.spawn_enemy_bullet)
+	enemy.projectile_spawn_requested.connect(combat.spawn_projectile)
 	enemy.particles_requested.connect(effects.spawn_particles)
 	enemy.sound_requested.connect(audio.play_sound)
 	enemy.trauma_requested.connect(camera_rig.add_trauma)
@@ -49,3 +56,7 @@ func living_count() -> int:
 		if not enemy.dead and not enemy.is_queued_for_deletion():
 			count += 1
 	return count
+
+
+func _get_configuration_warnings() -> PackedStringArray:
+	return ContentValidator.validate_enemy_scenes(enemy_scenes)

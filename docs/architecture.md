@@ -15,6 +15,7 @@ DeadShift (Game)
 │       ├── Arena             Mapa recreado al reiniciar, con geometría, entradas y navegación
 │       ├── Player
 │       │   ├── CollisionShape3D
+│       │   ├── HealthComponent  Estado y señales de vida por instancia
 │       │   ├── PlayerInput   Acciones por perfil y dispositivo local
 │       │   ├── WeaponController  Selección y bloqueo de cambio de armas
 │       │   │   └── Weapon × 3   Escenas completas con cargador, emisor y modelo propio
@@ -22,6 +23,7 @@ DeadShift (Game)
 │       ├── Enemies           EnemySpawner; propietario de los zombis
 │       │   └── Zombie
 │       │       ├── CollisionShape3D
+│       │       ├── HealthComponent
 │       │       ├── Movement / Combat  Componentes y ataques reutilizables
 │       │       └── Visuals   Modelo, detalles, vida y avisos guardados como nodos
 │       ├── Combat
@@ -29,7 +31,8 @@ DeadShift (Game)
 │       │   └── Grenades
 │       ├── Pickups           Suministros con vida útil propia
 │       ├── Effects           Partículas con un límite de instancias
-│       └── WaveDirector     Planificación, aparición y fin de oleadas
+│       ├── Rewards          Puntos, atribución, curación y suministros
+│       └── WaveDirector     Ejecuta Resources de campaña y oleadas
 ├── Interface (GameHUD)
 │   ├── GameplayHUD          Vida, munición, granadas y estadísticas
 │   ├── HudFeedback          Banners y flash de daño
@@ -44,7 +47,9 @@ Los nodos y widgets permanentes se declaran en `.tscn`. La geometría de la aren
 | Componente | Responsabilidad | Entrada / salida principal |
 | --- | --- | --- |
 | `Game` | Estados `Mode`, pausa, reinicio y coordinación de la interfaz | Intenciones de menús y eventos de la partida |
-| `RunSession` | Conectar los componentes de una partida; puntuación y recompensas | Señales de actores y de oleadas; `get_stats()` |
+| `RunSession` | Conectar los componentes de una partida | Dependencias y señales; `get_stats()` |
+| `RunRewards` | Puntuación, atribución de bajas, curación y drops | Contexto mortal, eventos de oleada y suministros |
+| `HealthComponent` | Vida máxima, actual, curación y señales | API de los actores; muerte y cambio de vida |
 | `WaveDirector` | Orden y ritmo de las oleadas | Objetivo y contador inyectados; señales de aparición y fin |
 | `EnemySpawner` | Crear escenas de enemigos e inyectar sus dependencias | Superviviente, navegación y servicios explícitos |
 | `CombatService` | Crear proyectiles y resolver el daño de explosiones | Solicitudes de disparo y granada; población de enemigos |
@@ -55,13 +60,13 @@ Los nodos y widgets permanentes se declaran en `.tscn`. La geometría de la aren
 | `WeaponController` | Inventario, montaje, selección y bloqueo compartido | Órdenes del portador y señales de armas |
 | `Weapon` | Contrato de arma, configuración y cadencia | Componentes exportados; señales de proyectiles y feedback |
 | `WeaponMagazine` / `ProjectileEmitter` / `WeaponPresentation` | Munición y recarga, patrón balístico, modelo y boca propios | Composición de cada escena de arma |
-| `PickupManager` / `SupplyPickup` | Crear, caducar, recoger y aplicar suministros | Objetivo inyectado y señal `collected` |
+| `PickupManager` / `SupplyPickup` | Crear, caducar y recoger suministros | Objetivo inyectado y señal `supply_collected` hacia Rewards |
 | `Arena` / `HordeNavigation` | Mapa editable y navegación compartida | Colisiones, área jugable y objetivo inyectado |
 | `SpawnZone` | Entradas editables de enemigos | Anchura, peso, oleada, tipos permitidos y distancia mínima |
 | `GameHUD` y sus vistas | Mostrar información e intenciones del jugador | Diccionarios de estadísticas y señales de menú |
 | `SaveData` | Leer y escribir récord y sonido | `user://dead_shift.cfg` |
 
-`RunSession.configure(map, audio, camera_rig)` es el único punto de inicialización de una partida: sitúa al jugador en su marcador, asigna el mapa y sus límites y conecta todos los servicios antes de `start()`. Por ejemplo, conecta `Survivor.bullet_requested` con `CombatService.spawn_player_bullet`; el superviviente puede instanciarse y probarse sin una partida global. Los impactos de balas y las detonaciones de granadas también se comunican mediante señales.
+`RunSession.configure(map, audio, camera_rig)` es el punto de inicialización de una partida: sitúa al jugador en su marcador, asigna el mapa y sus límites y conecta todos los servicios antes de `start()`. Conecta `Survivor.projectile_spawn_requested` con `CombatService.spawn_projectile`, incluyendo portador, equipo y escena. El superviviente puede instanciarse y probarse sin una partida global. Consulta [contenido, estado y servicios](gameplay_content.md) para los contratos de daño, coordenadas y validación.
 
 Los grupos `player`, `enemies`, `projectiles` y `grenades` sirven para inspección y pruebas; la lógica de producción usa referencias y contenedores explícitos. Un zombi separa su movimiento de sus hermanos en `Enemies`, evitando acoplar dos poblaciones distintas.
 
@@ -76,13 +81,14 @@ Los grupos `player`, `enemies`, `projectiles` y `grenades` sirven para inspecci�
 
 ## Dónde ampliar el juego
 
-- **Oleadas y enemigos programados:** `scripts/gameplay/wave_director.gd`.
+- **Oleadas y enemigos programados:** Resources en `assets/waves/`; ejecutor `scripts/gameplay/wave_director.gd`.
 - **Enemigos:** base `scenes/actors/enemy.tscn`, variantes en `scenes/enemies/` y componentes en `scripts/enemies/`; consulta [enemigos editables](enemies.md).
 - **Armas:** escenas en `scenes/weapons/` y componentes en `scripts/weapons/`; consulta [armas editables](weapons.md).
 - **Controles:** bindings en `project.godot`, lector `scripts/input/player_input.gd`; consulta [entrada por jugador](input.md).
 - **Movimiento del jugador:** `scripts/player.gd`; cuerpo y animación en `scripts/actors/player_visuals.gd`.
-- **Granadas y balas:** `scripts/grenade.gd`, `scripts/projectile.gd` y resolución de daño en `CombatService`.
-- **Mejoras y reglas compartidas:** `scripts/core/game_rules.gd`.
+- **Granadas y balas:** escenas en `scenes/projectiles/`, scripts de movimiento y resolución de daño en `CombatService`.
+- **Mejoras:** Resources en `assets/perks/`, catálogo en `scripts/perks/` y receptores en actor y equipamiento.
+- **Vida y recompensas:** `HealthComponent` y `RunRewards`, cada uno con escena propia.
 - **Mapas, estructura y props:** escena `scenes/world/arena.tscn` y `scripts/world/arena.gd`.
 - **Interfaz:** `scenes/ui/hud.tscn` y los scripts de `scripts/ui/`.
 - **Suministros:** `scenes/gameplay/supply_pickup.tscn` y su script.

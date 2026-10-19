@@ -6,6 +6,7 @@
 
 [ext_resource type="Script" path="res://scripts/enemies/enemy_movement.gd" id="movement"]
 [ext_resource type="Script" path="res://scripts/enemies/enemy_combat.gd" id="combat"]
+[ext_resource type="PackedScene" path="res://scenes/components/health_component.tscn" id="health"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_35asm"]
 radius = 0.43
@@ -37,7 +38,7 @@ inner_radius = 0.93
 rings = 32
 ring_segments = 6
 
-[node name="Enemy" type="CharacterBody3D" node_paths=PackedStringArray("visuals", "movement", "combat", "attack_origin") unique_id=254739376 groups=["enemies"]]
+[node name="Enemy" type="CharacterBody3D" node_paths=PackedStringArray("visuals", "movement", "combat", "attack_origin", "health_component") unique_id=254739376 groups=["enemies"]]
 collision_layer = 4
 collision_mask = 2
 motion_mode = 1
@@ -46,6 +47,10 @@ visuals = NodePath("Visuals")
 movement = NodePath("Movement")
 combat = NodePath("Combat")
 attack_origin = NodePath("AttackOrigin")
+health_component = NodePath("HealthComponent")
+
+[node name="HealthComponent" parent="." instance=ExtResource("health")]
+maximum = 36.0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1955445509]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)

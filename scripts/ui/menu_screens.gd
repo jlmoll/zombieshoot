@@ -69,7 +69,7 @@ func show_title(best: int) -> void:
 	right.add_child(controller_separator)
 	right.add_child(_label("ControllerHeading", "MANDO · DOBLE STICK", 12, AMBER))
 	right.add_child(_label("ControllerControls", "Izq. mover · Der. apuntar y disparar\nRT / RB disparar · A / LB esquivar\nB granada · X recargar · Y arma · Start pausa", 14))
-	play.call_deferred("grab_focus")
+	_focus_when_ready.call_deferred(play)
 
 
 func show_pause() -> void:
@@ -83,7 +83,7 @@ func show_pause() -> void:
 	_sound_button = _button("SoundButton", _sound_text(), _toggle_sound)
 	column.add_child(_sound_button)
 	column.add_child(_button("MenuButton", "VOLVER AL MENÚ", menu_requested.emit))
-	resume.call_deferred("grab_focus")
+	_focus_when_ready.call_deferred(resume)
 
 
 func show_game_over(score: int, wave: int, best: int, victory: bool = false) -> void:
@@ -97,7 +97,7 @@ func show_game_over(score: int, wave: int, best: int, victory: bool = false) -> 
 	var again := _button("RestartButton", "NUEVA OPERACIÓN    →", restart_requested.emit, true)
 	column.add_child(again)
 	column.add_child(_button("MenuButton", "VOLVER AL MENÚ", menu_requested.emit))
-	again.call_deferred("grab_focus")
+	_focus_when_ready.call_deferred(again)
 
 
 func show_upgrades(choices: Array) -> void:
@@ -129,7 +129,12 @@ func show_upgrades(choices: Array) -> void:
 		if first == null:
 			first = select
 	if first != null:
-		first.call_deferred("grab_focus")
+		_focus_when_ready.call_deferred(first)
+
+
+func _focus_when_ready(control: Control) -> void:
+	if is_instance_valid(control) and control.is_inside_tree() and control.is_visible_in_tree():
+		control.grab_focus()
 
 
 func _select_upgrade(id: String) -> void:

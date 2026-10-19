@@ -7,6 +7,10 @@ signal fired
 signal projectile_requested(
 	origin: Vector3, direction: Vector3, damage: float, speed: float, pierce: int
 )
+signal projectile_spawn_requested(
+	origin: Vector3, direction: Vector3, damage: float, speed: float, pierce: int,
+	context: DamageContext, scene: PackedScene
+)
 signal sound_requested(kind: String)
 signal trauma_requested(amount: float)
 
@@ -16,6 +20,11 @@ signal trauma_requested(amount: float)
 var weapons: Array[Weapon] = []
 var selected_index: int = 0
 var cooldown_remaining: float = 0.0
+var wielder: Node:
+	set(value):
+		wielder = value
+		for weapon in weapons:
+			weapon.wielder = value
 var current_weapon: Weapon:
 	get:
 		return weapons[selected_index] if not weapons.is_empty() else null
@@ -25,7 +34,9 @@ func _ready() -> void:
 	for child in get_children():
 		if child is Weapon:
 			weapons.append(child)
+			child.wielder = wielder
 			child.projectile_requested.connect(projectile_requested.emit)
+			child.projectile_spawn_requested.connect(projectile_spawn_requested.emit)
 			child.state_changed.connect(state_changed.emit)
 			child.fired.connect(fired.emit)
 			child.sound_requested.connect(sound_requested.emit)
@@ -99,17 +110,18 @@ func stop() -> void:
 
 
 func apply_upgrade(id: String) -> void:
+	var definition := PerkCatalog.find(id)
+	if definition != null:
+		apply_perk(definition)
+
+
+func apply_perk(definition: PerkDefinition) -> void:
 	for weapon in weapons:
-		match id:
-			"damage", "power":
-				weapon.damage_multiplier *= 1.25
-			"fire_rate", "firerate":
-				weapon.fire_rate_multiplier *= 1.2
-			"reload":
-				weapon.reload_multiplier *= 0.8
-			"magazine", "ammo":
-				weapon.magazine.capacity = ceili(weapon.magazine.capacity * 1.25)
-				weapon.magazine.refill()
-			"pierce":
-				weapon.penetration_bonus += 1
+		weapon.damage_multiplier *= definition.damage_multiplier
+		weapon.fire_rate_multiplier *= definition.fire_rate_multiplier
+		weapon.reload_multiplier *= definition.reload_multiplier
+		weapon.magazine.capacity = ceili(weapon.magazine.capacity * definition.magazine_multiplier)
+		weapon.penetration_bonus += definition.pierce_bonus
+		if definition.refill_ammo:
+			weapon.magazine.refill()
 	state_changed.emit()

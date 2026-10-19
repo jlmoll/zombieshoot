@@ -8,9 +8,11 @@ signal collected(kind: String)
 var target: Node3D
 var life_left: float = 22.0
 var _clock: float = 0.0
+var _base_height: float = 0.5
 
 
 func _ready() -> void:
+	_base_height = global_position.y
 	_clock = randf() * TAU
 	var color: Color = Color("7fea9c") if kind == "health" else Color("ffc16c")
 	PrototypeMeshes.box($Visuals, Vector3(0.65, 0.32, 0.65), Vector3.ZERO, Color("183a3b")).name = "Crate"
@@ -23,7 +25,7 @@ func _physics_process(delta: float) -> void:
 	life_left -= delta
 	_clock += delta * 3.0
 	rotation.y += delta
-	position.y = 0.5 + sin(_clock) * 0.12
+	global_position.y = _base_height + sin(_clock) * 0.12
 	if is_instance_valid(target) and global_position.distance_to(target.global_position + Vector3.UP * 0.5) < 1.25:
 		collected.emit(kind)
 		set_physics_process(false)

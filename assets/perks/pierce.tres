@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="PerkDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/perks/perk_definition.gd" id="1_perk"]
+
+[resource]
+script = ExtResource("1_perk")
+id = &"pierce"
+title = "PERFORACIÓN"
+description = "Los proyectiles atraviesan un enemigo adicional."
+pierce_bonus = 1

@@ -115,6 +115,7 @@ func _run() -> void:
 	await _test_grenades()
 	await _test_enemy_navigation_and_attacks()
 	await _test_progression()
+	await _test_invalid_content()
 	await _finish()
 
 
@@ -298,9 +299,9 @@ func _test_deferred_wave_pause() -> void:
 	var waves: Node = world.session.waves
 	waves.set_physics_process(false)
 	waves.spawn_left = 0
-	waves.wave_finished = true
+	waves.wave_finished = false
+	waves.advance(1.0 / 60.0)
 	world.pause_run()
-	waves._emit_wave_cleared.call_deferred()
 	await _frames(2)
 	_check(world.mode == world.Mode.PAUSED and not waves.wave_finished, "pause defers completed wave without losing its notification")
 	world.resume_run()
@@ -379,7 +380,7 @@ func _test_projectile_physics() -> void:
 	var kills_before: int = world.session.kills
 	for kind in ["walker", "runner", "brute", "spitter", "boss"]:
 		var target: Node3D = _stationary_enemy(kind, Vector3(5, 0, -4))
-		target.take_damage(100000.0)
+		target.take_damage(100000.0, DamageContext.create(player, player, player.get_damage_team(), &"test"))
 		target.take_damage(100000.0)
 	_check(world.session.kills == kills_before + 5, "every archetype reports exactly one death")
 	await _frames(2)
@@ -511,7 +512,8 @@ func _test_progression() -> void:
 		world.session.combat.spawn_enemy_bullet(Vector3(16, 0.8, 16), Vector3.LEFT, 1.0, 1.0)
 		for enemy in get_nodes_in_group("enemies"):
 			if enemy.get_parent() == world.session.enemies:
-				enemy.take_damage(100000.0)
+				var player: Survivor = world.session.player
+				enemy.take_damage(100000.0, DamageContext.create(player, player, player.get_damage_team(), &"test"))
 		await _frames(4)
 		_check(get_nodes_in_group("projectiles").is_empty(), "wave end clears hostile projectiles")
 		if expected_wave < 8:
@@ -610,3 +612,21 @@ func _test_map_authoring() -> void:
 	_check(world.arena.get_node("Props/Barricade1").position == Vector3(-7, 0.8, -6), "restart restores authored map geometry")
 	_check(world.session.player.global_position == world.arena.player_spawn.global_position, "survivor starts at map marker")
 	print("Integration: editable geometry, rotated collisions, map bounds, spawn filtering and map reset checked")
+
+
+func _test_invalid_content() -> void:
+	var original: PackedScene = world.map_scene
+	var invalid := PackedScene.new()
+	var wrong_root := Node3D.new()
+	_check(invalid.pack(wrong_root) == OK, "invalid map fixture packs")
+	wrong_root.free()
+	world.map_scene = invalid
+	world.start_run()
+	_check(world.mode == world.Mode.PAUSED and paused and world.session == null, "invalid map root stops visibly before actor initialization")
+	world.map_scene = original
+	world.start_run()
+	_check(world.mode == world.Mode.PLAYING and world.session != null, "a valid restart recovers from configuration failure")
+	world.session.enemies.enemy_scenes = world.session.enemies.enemy_scenes.duplicate()
+	world.session.enemies.enemy_scenes.erase("walker")
+	world.session.start()
+	_check(world.mode == world.Mode.PAUSED and not world.session.waves.running, "missing enemy registration stops the run instead of stalling a wave")

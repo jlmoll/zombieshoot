@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WaveCampaign" load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/waves/wave_campaign.gd" id="campaign"]
+[ext_resource type="Script" path="res://scripts/waves/wave_definition.gd" id="wave"]
+[ext_resource type="Resource" path="res://assets/waves/wave_01.tres" id="1"]
+[ext_resource type="Resource" path="res://assets/waves/wave_02.tres" id="2"]
+[ext_resource type="Resource" path="res://assets/waves/wave_03.tres" id="3"]
+[ext_resource type="Resource" path="res://assets/waves/wave_04.tres" id="4"]
+[ext_resource type="Resource" path="res://assets/waves/wave_05.tres" id="5"]
+[ext_resource type="Resource" path="res://assets/waves/wave_06.tres" id="6"]
+[ext_resource type="Resource" path="res://assets/waves/wave_07.tres" id="7"]
+[ext_resource type="Resource" path="res://assets/waves/wave_08.tres" id="8"]
+
+[resource]
+script = ExtResource("campaign")
+waves = Array[ExtResource("wave")]([ExtResource("1"), ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8")])
+

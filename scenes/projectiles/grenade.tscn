@@ -1,0 +1,49 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/grenade.gd" id="script"]
+
+[sub_resource type="SphereShape3D" id="collision"]
+radius = 0.16
+
+[sub_resource type="StandardMaterial3D" id="material"]
+albedo_color = Color(1, 0.75686, 0.42353, 1)
+emission_enabled = true
+emission = Color(0.749, 0.4196, 0.1451, 1)
+
+[sub_resource type="SphereMesh" id="mesh"]
+material = SubResource("material")
+radius = 0.2
+height = 0.4
+radial_segments = 10
+rings = 5
+
+[sub_resource type="StandardMaterial3D" id="ring_material"]
+resource_local_to_scene = true
+shading_mode = 0
+transparency = 1
+albedo_color = Color(1, 0.65, 0.25, 0.35)
+
+[sub_resource type="TorusMesh" id="ring_mesh"]
+inner_radius = 0.98
+outer_radius = 1.0
+rings = 40
+ring_segments = 6
+
+[node name="Grenade" type="CharacterBody3D" groups=["grenades"]]
+top_level = true
+collision_layer = 0
+collision_mask = 2
+motion_mode = 1
+script = ExtResource("script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("collision")
+
+[node name="Model" type="MeshInstance3D" parent="."]
+mesh = SubResource("mesh")
+
+[node name="Ring" type="MeshInstance3D" parent="."]
+top_level = true
+cast_shadow = 0
+mesh = SubResource("ring_mesh")
+material_override = SubResource("ring_material")

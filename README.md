@@ -61,6 +61,10 @@ La escena principal coordina nodos independientes para arena, navegación, cáma
 
 Consulta [la arquitectura y los puntos de extensión](docs/architecture.md) para ver el árbol de escenas, las responsabilidades y el ciclo de vida.
 
+Proyectiles y granadas tienen escenas propias; perks y oleadas se editan como
+Resources. Vida y recompensas son componentes compartidos. Consulta
+[contenido, contexto de daño y validación del editor](docs/gameplay_content.md).
+
 ## Zombi low poly animado
 
 El enemigo usa `assets/models/zombie_blocky.glb`, exportado desde

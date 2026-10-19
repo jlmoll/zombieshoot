@@ -29,7 +29,8 @@ func _ready() -> void:
 	hud.menu_requested.connect(show_title)
 	hud.upgrade_selected.connect(choose_upgrade)
 	hud.mute_toggled.connect(_set_muted)
-	_new_session()
+	if not _new_session():
+		return
 	show_title()
 	if "--smoke-test" in OS.get_cmdline_user_args():
 		var smoke: Node = load("res://tests/smoke_test.gd").new()
@@ -37,19 +38,35 @@ func _ready() -> void:
 		smoke.call_deferred("run", self)
 
 
-func _new_session() -> void:
+func _new_session() -> bool:
 	if is_instance_valid(session):
 		session_slot.remove_child(session)
 		session.queue_free()
 	session = RUN_SCENE.instantiate()
+	var map_instance: Node = map_scene.instantiate() if map_scene != null else null
+	var errors := PackedStringArray()
+	if not map_instance is Arena:
+		errors.append("Game needs a map scene with an Arena root.")
+	else:
+		errors.append_array(ContentValidator.validate_run(map_instance, session))
+	if not errors.is_empty():
+		if map_instance != null:
+			map_instance.free()
+		session.free()
+		session = null
+		arena = null
+		_on_configuration_failed(errors)
+		return false
 	session_slot.add_child(session)
-	arena = map_scene.instantiate()
+	arena = map_instance as Arena
 	session.add_child(arena)
 	session.configure(arena, audio, camera_rig)
 	session.wave_started.connect(_on_wave_started)
 	session.wave_cleared.connect(_on_wave_cleared)
+	session.configuration_failed.connect(_on_configuration_failed)
 	session.player.died.connect(_on_player_died)
 	_previous_health = session.player.health
+	return true
 
 
 func _request_start() -> void:
@@ -57,7 +74,8 @@ func _request_start() -> void:
 
 
 func start_run() -> void:
-	_new_session()
+	if not _new_session():
+		return
 	camera_rig.reset()
 	_set_mode(Mode.PLAYING)
 	hud.show_gameplay()
@@ -143,8 +161,9 @@ func _process(_delta: float) -> void:
 
 
 func _on_wave_started(number: int) -> void:
-	var subtitle: String = "ELIMINA LA AMENAZA" if number % 4 != 0 else "ALERTA · ABOMINACIÓN DETECTADA"
-	hud.set_banner("OLEADA %02d / %02d" % [number, GameRules.WAVE_COUNT], subtitle, 3.0)
+	var has_boss: bool = not session.waves.get_current_wave().boss_kind.is_empty()
+	var subtitle: String = "ALERTA · ABOMINACIÓN DETECTADA" if has_boss else "ELIMINA LA AMENAZA"
+	hud.set_banner("OLEADA %02d / %02d" % [number, session.waves.get_wave_count()], subtitle, 3.0)
 
 
 func _on_wave_cleared() -> void:
@@ -152,10 +171,9 @@ func _on_wave_cleared() -> void:
 		return
 	session.award_wave_bonus()
 	session.combat.clear_projectiles()
-	if session.waves.wave >= GameRules.WAVE_COUNT:
+	if session.waves.wave >= session.waves.get_wave_count():
 		_end_run(true)
 		return
-	session.player.heal(12)
 	_set_mode(Mode.UPGRADES)
 	var choices: Array = GameRules.UPGRADES.duplicate(true)
 	choices.shuffle()
@@ -168,8 +186,9 @@ func choose_upgrade(id: String) -> void:
 	session.player.apply_upgrade(id)
 	_set_mode(Mode.PLAYING)
 	hud.show_gameplay()
-	hud.set_banner("SECTOR DESPEJADO", "SIGUIENTE OLEADA EN 3 SEGUNDOS", 2.5)
-	session.waves.intermission = 3.0
+	var delay: float = session.waves.get_intermission_duration()
+	hud.set_banner("SECTOR DESPEJADO", "SIGUIENTE OLEADA EN %.1f SEGUNDOS" % delay, 2.5)
+	session.waves.intermission = maxf(delay, 0.001)
 	audio.play_sound("upgrade")
 
 
@@ -191,3 +210,12 @@ func _set_muted(enabled: bool) -> void:
 	audio.set_muted(enabled)
 	hud.set_muted(enabled)
 	save_data.set_muted(enabled)
+
+
+func _on_configuration_failed(errors: PackedStringArray) -> void:
+	if is_instance_valid(session) and is_instance_valid(session.waves):
+		session.waves.running = false
+	_set_mode(Mode.PAUSED)
+	hud.show_pause()
+	hud.set_banner("CONFIGURACIÓN INVÁLIDA", "\n".join(errors), 60.0)
+	push_warning("Run stopped: " + "; ".join(errors))

@@ -6,7 +6,7 @@ func spawn_particles(at: Vector3, color: Color, count: int) -> void:
 	if get_child_count() >= 35:
 		return
 	var effect: CPUParticles3D = CPUParticles3D.new()
-	effect.position = at
+	effect.position = to_local(at)
 	effect.amount = mini(count, 12)
 	effect.lifetime = 0.32
 	effect.one_shot = true

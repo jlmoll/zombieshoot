@@ -28,3 +28,19 @@ func _refresh_preview() -> void:
 	if preview != null:
 		preview.visible = Engine.is_editor_hint()
 		preview.scale.x = maxf(width, 0.1)
+
+
+func get_configuration_errors() -> PackedStringArray:
+	var errors := PackedStringArray()
+	if width < 0.0 or weight < 0.0 or minimum_distance < 0.0 or first_wave < 1:
+		errors.append("SpawnZone %s has invalid dimensions, weight, distance or first wave." % name)
+	if enabled and weight > 0.0 and enemy_kinds.is_empty():
+		errors.append("SpawnZone %s needs at least one enemy kind." % name)
+	for kind in enemy_kinds:
+		if kind.is_empty():
+			errors.append("SpawnZone %s has an empty enemy kind." % name)
+	return errors
+
+
+func _get_configuration_warnings() -> PackedStringArray:
+	return get_configuration_errors()

@@ -5,6 +5,10 @@ extends Node
 signal projectile_requested(
 	origin: Vector3, direction: Vector3, damage: float, speed: float, pierce: int
 )
+signal projectile_spawn_requested(
+	origin: Vector3, direction: Vector3, damage: float, speed: float, pierce: int,
+	context: DamageContext, scene: PackedScene
+)
 
 var _rng := RandomNumberGenerator.new()
 
@@ -15,10 +19,12 @@ func _ready() -> void:
 
 func emit_shot(
 		origin: Vector3, heading: Vector3, damage: float, speed: float,
-		pierce: int, pellets: int, spread: float, pellet_jitter: float
+		pierce: int, pellets: int, spread: float, pellet_jitter: float,
+		context: DamageContext = null, scene: PackedScene = null
 ) -> void:
 	for direction in get_directions(heading, pellets, spread, pellet_jitter):
 		projectile_requested.emit(origin, direction, damage, speed, pierce)
+		projectile_spawn_requested.emit(origin, direction, damage, speed, pierce, context, scene)
 
 
 func get_directions(

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="PerkDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/perks/perk_definition.gd" id="1_perk"]
+
+[resource]
+script = ExtResource("1_perk")
+id = &"health"
+title = "SEGUNDO ALIENTO"
+description = "+25 de vida máxima y recuperación total."
+max_health_bonus = 25.0
+full_heal = true

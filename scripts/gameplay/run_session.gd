@@ -4,6 +4,7 @@ extends Node3D
 
 signal wave_started(number: int)
 signal wave_cleared
+signal configuration_failed(errors: PackedStringArray)
 
 @onready var player: Survivor = $Player
 @onready var enemies: EnemySpawner = $Enemies
@@ -11,9 +12,14 @@ signal wave_cleared
 @onready var pickups: PickupManager = $Pickups
 @onready var effects: ImpactEffects = $Effects
 @onready var waves: WaveDirector = $WaveDirector
+@onready var rewards: RunRewards = $Rewards
 
-var score: int = 0
-var kills: int = 0
+var score: int:
+	get:
+		return rewards.score
+var kills: int:
+	get:
+		return rewards.kills
 var elapsed: float = 0.0
 var _audio: GameAudio
 var _navigation: HordeNavigation
@@ -22,6 +28,7 @@ var _navigation: HordeNavigation
 func configure(map: Arena, audio: GameAudio, camera_rig: IsometricCameraRig) -> void:
 	player.global_position = map.player_spawn.global_position
 	waves.map = map
+	waves.enemy_scenes = enemies.enemy_scenes
 	combat.playable_area = map.playable_area
 	var navigation: HordeNavigation = map.navigation
 	_audio = audio
@@ -29,6 +36,7 @@ func configure(map: Arena, audio: GameAudio, camera_rig: IsometricCameraRig) -> 
 	navigation.set_target(player)
 	camera_rig.target = player
 	combat.enemies = enemies
+	combat.damage_targets = [player]
 	combat.effects = effects
 	combat.audio = audio
 	combat.camera_rig = camera_rig
@@ -38,11 +46,14 @@ func configure(map: Arena, audio: GameAudio, camera_rig: IsometricCameraRig) -> 
 	enemies.effects = effects
 	enemies.audio = audio
 	enemies.camera_rig = camera_rig
-	enemies.enemy_defeated.connect(_on_enemy_defeated)
+	rewards.pickups = pickups
+	rewards.audio = audio
+	rewards.waves = waves
+	enemies.enemy_defeated.connect(rewards.reward_defeat)
 	pickups.player = player
-	pickups.audio = audio
-	player.bullet_requested.connect(combat.spawn_player_bullet)
-	player.grenade_requested.connect(combat.spawn_grenade)
+	pickups.supply_collected.connect(rewards.collect_supply)
+	player.projectile_spawn_requested.connect(combat.spawn_projectile)
+	player.grenade_requested.connect(_spawn_player_grenade)
 	player.particles_requested.connect(effects.spawn_particles)
 	player.sound_requested.connect(audio.play_sound)
 	player.trauma_requested.connect(camera_rig.add_trauma)
@@ -51,9 +62,15 @@ func configure(map: Arena, audio: GameAudio, camera_rig: IsometricCameraRig) -> 
 	waves.enemy_spawn_requested.connect(enemies.spawn)
 	waves.wave_started.connect(_on_wave_started)
 	waves.wave_cleared.connect(wave_cleared.emit)
+	waves.configuration_failed.connect(configuration_failed.emit)
+	enemies.spawn_failed.connect(waves.report_spawn_failure)
 
 
 func start() -> void:
+	var errors := ContentValidator.validate_run(waves.map, self)
+	if not errors.is_empty():
+		configuration_failed.emit(errors)
+		return
 	waves.start()
 
 
@@ -63,13 +80,13 @@ func _physics_process(delta: float) -> void:
 
 func get_stats() -> Dictionary:
 	var stats: Dictionary = player.get_stats()
-	stats.merge({"score": score, "wave": waves.wave, "kills": kills,
+	stats.merge({"score": score, "wave": waves.wave, "wave_count": waves.get_wave_count(), "kills": kills,
 		"enemies": enemies.living_count() + waves.spawn_left, "time": elapsed})
 	return stats
 
 
 func award_wave_bonus() -> void:
-	score += 250 * waves.wave
+	rewards.reward_wave(player, waves.wave >= waves.get_wave_count())
 
 
 func _on_wave_started(number: int) -> void:
@@ -79,13 +96,6 @@ func _on_wave_started(number: int) -> void:
 	wave_started.emit(number)
 
 
-func _on_enemy_defeated(enemy: Node3D) -> void:
-	kills += 1
-	player.kills = kills
-	score += enemy.score_value * (1 + int(waves.wave / 3.0))
-	if enemy.kind == "boss" or kills % 13 == 0 or (player.health < player.max_health * 0.4 and kills % 5 == 0):
-		pickups.spawn_pickup(enemy.position, "health")
-	elif kills % 8 == 0:
-		pickups.spawn_pickup(enemy.position, "ammo")
-	if kills % 5 == 0:
-		_audio.play_sound("kill")
+func _spawn_player_grenade(origin: Vector3, direction: Vector3, distance: float) -> void:
+	var context := DamageContext.create(player, player, player.get_damage_team(), &"grenade")
+	combat.spawn_grenade(origin, direction, distance, context)

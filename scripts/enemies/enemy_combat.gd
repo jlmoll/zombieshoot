@@ -5,6 +5,10 @@ extends Node
 signal attack_started(duration: float)
 signal sound_requested(kind: String)
 signal projectile_requested(origin: Vector3, direction: Vector3, damage: float, speed: float)
+signal projectile_spawn_requested(
+	origin: Vector3, direction: Vector3, damage: float, speed: float, pierce: int,
+	context: DamageContext, scene: PackedScene
+)
 signal particles_requested(at: Vector3, color: Color, count: int)
 signal trauma_requested(amount: float)
 
@@ -19,6 +23,11 @@ var cooldown_remaining: float = 1.5
 var windup_remaining: float = 0.0
 var _locked_target := Vector3.ZERO
 var _rng := RandomNumberGenerator.new()
+var carrier: Node:
+	set(value):
+		carrier = value
+		for attack in attacks:
+			_set_carrier(attack)
 
 
 func _ready() -> void:
@@ -61,10 +70,19 @@ func get_progress() -> float:
 
 
 func _connect_payload(attack: EnemyAttack) -> void:
+	attack.carrier = carrier
 	attack.projectile_requested.connect(projectile_requested.emit)
+	attack.projectile_spawn_requested.connect(projectile_spawn_requested.emit)
 	attack.particles_requested.connect(particles_requested.emit)
 	attack.trauma_requested.connect(trauma_requested.emit)
 	# Composite attacks can contain reusable payloads without selecting those as attacks.
 	for child in attack.get_children():
 		if child is EnemyAttack:
 			_connect_payload(child)
+
+
+func _set_carrier(attack: EnemyAttack) -> void:
+	attack.carrier = carrier
+	for child in attack.get_children():
+		if child is EnemyAttack:
+			_set_carrier(child)

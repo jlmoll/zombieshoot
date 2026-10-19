@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="WaveDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/waves/wave_definition.gd" id="wave"]
+
+[resource]
+script = ExtResource("wave")
+enemy_count = 14
+spawn_interval = 0.735
+

@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/gameplay/run_session.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/actors/player.tscn" id="2"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://scripts/gameplay/pickup_manager.gd" id="5"]
 [ext_resource type="Script" path="res://scripts/gameplay/impact_effects.gd" id="6"]
 [ext_resource type="Script" path="res://scripts/gameplay/wave_director.gd" id="7"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/run_rewards.tscn" id="8"]
 
 [node name="RunSession" type="Node3D"]
 process_mode = 1
@@ -32,3 +33,5 @@ script = ExtResource("6")
 
 [node name="WaveDirector" type="Node" parent="."]
 script = ExtResource("7")
+
+[node name="Rewards" parent="." instance=ExtResource("8")]
