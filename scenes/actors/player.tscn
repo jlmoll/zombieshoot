@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scripts/actors/player_visuals.gd" id="2_visuals"]
@@ -8,6 +8,8 @@
 [ext_resource type="PackedScene" path="res://scenes/weapons/pistol.tscn" id="pistol"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/shotgun.tscn" id="shotgun"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/smg.tscn" id="smg"]
+
+[ext_resource type="Script" path="res://scripts/input/player_input.gd" id="input"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.33
@@ -37,3 +39,6 @@ script = ExtResource("controller")
 [node name="Shotgun" parent="WeaponController" instance=ExtResource("shotgun")]
 
 [node name="SubmachineGun" parent="WeaponController" instance=ExtResource("smg")]
+
+[node name="PlayerInput" type="Node" parent="."]
+script = ExtResource("input")

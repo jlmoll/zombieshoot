@@ -99,26 +99,34 @@ func _toggle_pause() -> void:
 		resume_run()
 
 
-func _input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo:
-		match event.keycode:
-			KEY_ESCAPE, KEY_P:
-				_toggle_pause()
-				get_viewport().set_input_as_handled()
-			KEY_ENTER:
-				if mode == Mode.TITLE and get_viewport().gui_get_focus_owner() == null:
-					_request_start()
-					get_viewport().set_input_as_handled()
-			KEY_F11:
-				var fullscreen: bool = DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
-				DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if fullscreen else DisplayServer.WINDOW_MODE_FULLSCREEN)
-			KEY_M:
-				_set_muted(not audio.muted)
-	if event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_START:
-		if mode == Mode.TITLE:
+func _shortcut_input(event: InputEvent) -> void:
+	if event.is_echo():
+		return
+	if event.is_action_pressed(&"game_pause"):
+		if mode == Mode.TITLE and event.is_action_pressed(&"game_start"):
 			_request_start()
 		else:
 			_toggle_pause()
+	elif event.is_action_pressed(&"game_fullscreen"):
+		var fullscreen: bool = DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+		DisplayServer.window_set_mode(
+			DisplayServer.WINDOW_MODE_WINDOWED if fullscreen else DisplayServer.WINDOW_MODE_FULLSCREEN
+		)
+	elif event.is_action_pressed(&"game_mute"):
+		_set_muted(not audio.muted)
+	else:
+		return
+	get_viewport().set_input_as_handled()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if (
+		event.is_action_pressed(&"game_start")
+		and mode == Mode.TITLE
+		and get_viewport().gui_get_focus_owner() == null
+	):
+		_request_start()
+		get_viewport().set_input_as_handled()
 
 
 func _notification(what: int) -> void:

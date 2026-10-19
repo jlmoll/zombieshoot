@@ -435,7 +435,7 @@ func _test_grenades() -> void:
 	var player: Node3D = world.session.player
 	_check(player.grenades == 2, "first wave grants two grenades")
 	_check(world.hud.gameplay.grenades_label.text.contains("2 / 4"), "HUD displays grenade inventory and cap")
-	player._mouse_active = false
+	player.controls.mouse_aim_active = false
 	player.aim_direction = Vector3.RIGHT
 	_stationary_enemy("walker", Vector3(9, 0, 0))
 	_stationary_enemy("spitter", Vector3(9, 0, 2))

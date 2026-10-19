@@ -68,7 +68,7 @@ Para usar un arma aislada basta instanciar su escena, conectar las señales y ll
 3. Añade su modelo en `ModelSlot` y sitúa `Muzzle`.
 4. Instancia la escena como hijo de `Player/WeaponController`.
 
-El ciclo con Q, rueda y mando recorre todas las armas encontradas. Las teclas numéricas actuales siguen siendo 1–3; ampliar esos atajos pertenece al futuro refactor de Input Map.
+El ciclo con Q, rueda y mando recorre todas las armas encontradas. Las acciones numéricas actuales son `p1_weapon_1/2/3` y `p2_weapon_1/2/3`; sus bindings se editan en Input Map. Consulta [entrada por jugador](input.md).
 
 Para cambiar únicamente la distribución de proyectiles, sustituye el script del componente `Emitter` por una subclase de `ProjectileEmitter`. Para cambiar toda la mecánica de disparo, extiende el contrato de `Weapon` en una escena específica. El emisor actual es balístico; hitscan o proyectiles con efectos propios requieren ampliar el contrato con `CombatService`.
 

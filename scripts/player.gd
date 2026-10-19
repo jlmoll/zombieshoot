@@ -32,16 +32,16 @@ var move_direction := Vector3.ZERO
 var invulnerability: float = 0.0
 var _grenade_left: float = 0.0
 var _dash_direction := Vector3.ZERO
-var _mouse_active: bool = true
-var _pad_buttons: Dictionary = {}
 var _hud_tick: float = 0.0
 var _alive: bool = true
 
 @onready var visuals: SurvivorVisuals = $Visuals
 @onready var weapon_controller: WeaponController = $WeaponController
+@onready var controls: PlayerInput = $PlayerInput
 
 
 func _ready() -> void:
+	controls.command_requested.connect(_on_input_command)
 	weapon_controller.mount(visuals.get_weapon_socket())
 	weapon_controller.state_changed.connect(stats_changed.emit)
 	weapon_controller.projectile_requested.connect(bullet_requested.emit)
@@ -83,36 +83,6 @@ func get_stats() -> Dictionary:
 	return stats
 
 
-func _input(event: InputEvent) -> void:
-	if not _active():
-		return
-	if event is InputEventMouseMotion:
-		_mouse_active = true
-	if event is InputEventMouseButton and event.pressed:
-		_mouse_active = true
-	if event is InputEventKey and event.pressed and not event.echo:
-		# Hotkeys follow their displayed labels, including remapped and injected input.
-		var key: Key = event.keycode if event.keycode != KEY_NONE else event.physical_keycode
-		match key:
-			KEY_SPACE:
-				try_dash()
-			KEY_R:
-				start_reload()
-			KEY_G:
-				try_throw_grenade()
-			KEY_Q:
-				weapon_controller.cycle_weapon()
-			KEY_1, KEY_2, KEY_3:
-				select_weapon(int(key - KEY_1))
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			weapon_controller.cycle_weapon()
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			weapon_controller.cycle_weapon(-1)
-		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			try_throw_grenade()
-
-
 func _physics_process(delta: float) -> void:
 	if not _active():
 		return
@@ -129,13 +99,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	position.y = 0.0
 	_update_aim()
-	var pad: int = _pad_id()
-	var stick_firing: bool = false
-	var trigger_firing: bool = false
-	if pad >= 0:
-		stick_firing = Vector2(Input.get_joy_axis(pad, JOY_AXIS_RIGHT_X), Input.get_joy_axis(pad, JOY_AXIS_RIGHT_Y)).length() > 0.24
-		trigger_firing = Input.get_joy_axis(pad, JOY_AXIS_TRIGGER_RIGHT) > 0.25 or Input.is_joy_button_pressed(pad, JOY_BUTTON_RIGHT_SHOULDER)
-	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or stick_firing or trigger_firing:
+	if controls.wants_to_fire():
 		try_shoot()
 	var magazine: WeaponMagazine = weapon_controller.current_weapon.magazine
 	visuals.animate(
@@ -152,51 +116,36 @@ func _active() -> bool:
 	return _alive and is_inside_tree() and not get_tree().paused
 
 
-func _pad_id() -> int:
-	var pads: Array[int] = Input.get_connected_joypads()
-	return pads[0] if not pads.is_empty() else -1
-
-
 func _read_input() -> void:
-	var horizontal: float = float(_key_down(KEY_D)) - float(_key_down(KEY_A))
-	var vertical: float = float(_key_down(KEY_S)) - float(_key_down(KEY_W))
-	var motion := Vector2(horizontal, vertical)
-	var pad: int = _pad_id()
-	if pad >= 0:
-		var left := Vector2(Input.get_joy_axis(pad, JOY_AXIS_LEFT_X), Input.get_joy_axis(pad, JOY_AXIS_LEFT_Y))
-		if left.length() > 0.18:
-			motion += left.normalized() * remap(clampf(left.length(), 0.18, 1.0), 0.18, 1.0, 0.0, 1.0)
-		if _pad_pressed(pad, JOY_BUTTON_LEFT_SHOULDER) or _pad_pressed(pad, JOY_BUTTON_A):
-			try_dash()
-		if _pad_pressed(pad, JOY_BUTTON_X):
-			start_reload()
-		if _pad_pressed(pad, JOY_BUTTON_Y):
-			weapon_controller.cycle_weapon()
-		if _pad_pressed(pad, JOY_BUTTON_B):
-			try_throw_grenade()
-	motion = motion.limit_length(1.0)
+	var motion: Vector2 = controls.get_move_vector()
 	move_direction = SCREEN_RIGHT * motion.x + SCREEN_DOWN * motion.y
 
 
-func _key_down(key: Key) -> bool:
-	return Input.is_physical_key_pressed(key) or Input.is_key_pressed(key)
-
-
-func _pad_pressed(pad: int, button: JoyButton) -> bool:
-	var pressed: bool = Input.is_joy_button_pressed(pad, button)
-	var was_pressed: bool = bool(_pad_buttons.get(button, false))
-	_pad_buttons[button] = pressed
-	return pressed and not was_pressed
+func _on_input_command(command: StringName) -> void:
+	if not _active():
+		return
+	match command:
+		&"dash":
+			_read_input()
+			try_dash()
+		&"reload":
+			start_reload()
+		&"grenade":
+			try_throw_grenade()
+		&"next_weapon":
+			weapon_controller.cycle_weapon()
+		&"previous_weapon":
+			weapon_controller.cycle_weapon(-1)
+		&"weapon_1", &"weapon_2", &"weapon_3":
+			select_weapon(int(str(command).trim_prefix("weapon_")) - 1)
 
 
 func _update_aim() -> void:
-	var pad: int = _pad_id()
-	if pad >= 0:
-		var stick := Vector2(Input.get_joy_axis(pad, JOY_AXIS_RIGHT_X), Input.get_joy_axis(pad, JOY_AXIS_RIGHT_Y))
-		if stick.length() > 0.24:
-			_mouse_active = false
-			aim_direction = (SCREEN_RIGHT * stick.x + SCREEN_DOWN * stick.y).normalized()
-	if _mouse_active:
+	var stick: Vector2 = controls.get_aim_vector()
+	if not stick.is_zero_approx():
+		controls.mouse_aim_active = false
+		aim_direction = (SCREEN_RIGHT * stick.x + SCREEN_DOWN * stick.y).normalized()
+	if controls.mouse_aim_active:
 		var camera: Camera3D = get_viewport().get_camera_3d()
 		if camera != null:
 			var cursor: Vector2 = get_viewport().get_mouse_position()
@@ -223,7 +172,7 @@ func try_throw_grenade() -> bool:
 	_update_aim()
 	var heading: Vector3 = aim_direction
 	var distance: float = 9.0
-	if _mouse_active:
+	if controls.mouse_aim_active:
 		var camera: Camera3D = get_viewport().get_camera_3d()
 		if camera != null:
 			var cursor: Vector2 = get_viewport().get_mouse_position()

@@ -110,3 +110,7 @@ Pistola, escopeta y subfusil son escenas con modelo 3D, boca de disparo y config
 ## Enemigos editables
 
 Los cinco tipos heredan de una escena base con estadísticas exportadas y componen movimiento, ataques y presentación. La orientación del modelo usa +Z sin giros compensatorios. Consulta [edición y extensión de enemigos](docs/enemies.md).
+
+## Controles por jugador
+
+Las acciones están en Input Map con perfiles independientes p1 y p2. Cada personaje usa un nodo PlayerInput y puede recibir un mando distinto. Consulta [configuración y preparación para dos jugadores](docs/input.md).

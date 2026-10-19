@@ -15,6 +15,7 @@ DeadShift (Game)
 │       ├── Arena             Mapa recreado al reiniciar, con geometría, entradas y navegación
 │       ├── Player
 │       │   ├── CollisionShape3D
+│       │   ├── PlayerInput   Acciones por perfil y dispositivo local
 │       │   ├── WeaponController  Selección y bloqueo de cambio de armas
 │       │   │   └── Weapon × 3   Escenas completas con cargador, emisor y modelo propio
 │       │   └── Visuals       Cuerpo y animación; monta armas en WeaponSocket
@@ -50,6 +51,7 @@ Los nodos y widgets permanentes se declaran en `.tscn`. La geometría de la aren
 | `Survivor` / `Zombie` | Movimiento, reglas y estado de cada actor | Señales de combate, audio, partículas y sacudida |
 | `SurvivorVisuals` / `ZombieVisuals` | Cuerpo y animación | Datos del actor; nunca modifican sus reglas |
 | `EnemyMovement` / `EnemyCombat` / `EnemyAttack` | Movimiento y ataques compuestos de cada variante | Objetivo, navegación y población inyectados; señales de efectos |
+| `PlayerInput` | Lectura de controles por jugador, filtrada por UI | Perfiles p1/p2 de Input Map; comandos semánticos |
 | `WeaponController` | Inventario, montaje, selección y bloqueo compartido | Órdenes del portador y señales de armas |
 | `Weapon` | Contrato de arma, configuración y cadencia | Componentes exportados; señales de proyectiles y feedback |
 | `WeaponMagazine` / `ProjectileEmitter` / `WeaponPresentation` | Munición y recarga, patrón balístico, modelo y boca propios | Composición de cada escena de arma |
@@ -77,7 +79,8 @@ Los grupos `player`, `enemies`, `projectiles` y `grenades` sirven para inspecci�
 - **Oleadas y enemigos programados:** `scripts/gameplay/wave_director.gd`.
 - **Enemigos:** base `scenes/actors/enemy.tscn`, variantes en `scenes/enemies/` y componentes en `scripts/enemies/`; consulta [enemigos editables](enemies.md).
 - **Armas:** escenas en `scenes/weapons/` y componentes en `scripts/weapons/`; consulta [armas editables](weapons.md).
-- **Control del jugador:** `scripts/player.gd`; cuerpo y animación en `scripts/actors/player_visuals.gd`.
+- **Controles:** bindings en `project.godot`, lector `scripts/input/player_input.gd`; consulta [entrada por jugador](input.md).
+- **Movimiento del jugador:** `scripts/player.gd`; cuerpo y animación en `scripts/actors/player_visuals.gd`.
 - **Granadas y balas:** `scripts/grenade.gd`, `scripts/projectile.gd` y resolución de daño en `CombatService`.
 - **Mejoras y reglas compartidas:** `scripts/core/game_rules.gd`.
 - **Mapas, estructura y props:** escena `scenes/world/arena.tscn` y `scripts/world/arena.gd`.
