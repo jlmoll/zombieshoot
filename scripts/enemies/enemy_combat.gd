@@ -6,8 +6,13 @@ signal attack_started(duration: float)
 signal sound_requested(kind: String)
 signal projectile_requested(origin: Vector3, direction: Vector3, damage: float, speed: float)
 signal projectile_spawn_requested(
-	origin: Vector3, direction: Vector3, damage: float, speed: float, pierce: int,
-	context: DamageContext, scene: PackedScene
+	origin: Vector3,
+	direction: Vector3,
+	damage: float,
+	speed: float,
+	pierce: int,
+	context: DamageContext,
+	scene: PackedScene
 )
 signal particles_requested(at: Vector3, color: Color, count: int)
 signal trauma_requested(amount: float)
@@ -16,18 +21,17 @@ signal trauma_requested(amount: float)
 @export_range(0.0, 10.0) var initial_delay_max: float = 2.8
 @export var warning_sound: String = "warning"
 @export var attack_sound: String = "enemy_shoot"
-
 var attacks: Array[EnemyAttack] = []
 var current_attack: EnemyAttack
 var cooldown_remaining: float = 1.5
 var windup_remaining: float = 0.0
-var _locked_target := Vector3.ZERO
-var _rng := RandomNumberGenerator.new()
 var carrier: Node:
 	set(value):
 		carrier = value
 		for attack in attacks:
 			_set_carrier(attack)
+var _locked_target := Vector3.ZERO
+var _rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
@@ -40,8 +44,13 @@ func _ready() -> void:
 
 
 func advance(
-		delta: float, distance: float, source: Vector3, origin: Vector3,
-		target: Node3D, phase: float, enraged: bool
+	delta: float,
+	distance: float,
+	source: Vector3,
+	origin: Vector3,
+	target: Node3D,
+	phase: float,
+	enraged: bool
 ) -> bool:
 	cooldown_remaining -= delta
 	if windup_remaining <= 0.0 and cooldown_remaining <= 0.0:

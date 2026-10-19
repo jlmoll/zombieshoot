@@ -9,8 +9,12 @@ extends EnemyAttack
 
 
 func execute(
-		source: Vector3, origin: Vector3, _target: Node3D,
-		locked_target: Vector3, _phase: float, _enraged: bool
+	source: Vector3,
+	origin: Vector3,
+	_target: Node3D,
+	locked_target: Vector3,
+	_phase: float,
+	_enraged: bool
 ) -> void:
 	var direction: Vector3 = locked_target - source
 	direction.y = 0.0
@@ -19,5 +23,4 @@ func execute(
 		var angle: float = 0.0
 		if projectile_count > 1:
 			angle = lerpf(-spread, spread, float(index) / float(projectile_count - 1))
-		emit_projectile(origin, direction.rotated(Vector3.UP, angle),
-			damage, projectile_speed)
+		emit_projectile(origin, direction.rotated(Vector3.UP, angle), damage, projectile_speed)

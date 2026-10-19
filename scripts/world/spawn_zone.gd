@@ -13,21 +13,17 @@ extends Marker3D
 @export var enemy_kinds: Array[String] = ["walker", "runner", "spitter", "brute"]
 @export_range(0.0, 40.0) var minimum_distance: float = 8.0
 
-func accepts(kind: String, wave: int) -> bool:
-	return enabled and weight > 0.0 and wave >= first_wave and kind in enemy_kinds
-
-func sample(rng: RandomNumberGenerator) -> Vector3:
-	return to_global(Vector3(rng.randf_range(-width * 0.5, width * 0.5), 0, 0))
-
 
 func _ready() -> void:
 	_refresh_preview()
 
-func _refresh_preview() -> void:
-	var preview := get_node_or_null("WidthPreview") as MeshInstance3D
-	if preview != null:
-		preview.visible = Engine.is_editor_hint()
-		preview.scale.x = maxf(width, 0.1)
+
+func accepts(kind: String, wave: int) -> bool:
+	return enabled and weight > 0.0 and wave >= first_wave and kind in enemy_kinds
+
+
+func sample(rng: RandomNumberGenerator) -> Vector3:
+	return to_global(Vector3(rng.randf_range(-width * 0.5, width * 0.5), 0, 0))
 
 
 func get_configuration_errors() -> PackedStringArray:
@@ -40,6 +36,13 @@ func get_configuration_errors() -> PackedStringArray:
 		if kind.is_empty():
 			errors.append("SpawnZone %s has an empty enemy kind." % name)
 	return errors
+
+
+func _refresh_preview() -> void:
+	var preview := get_node_or_null("WidthPreview") as MeshInstance3D
+	if preview != null:
+		preview.visible = Engine.is_editor_hint()
+		preview.scale.x = maxf(width, 0.1)
 
 
 func _get_configuration_warnings() -> PackedStringArray:

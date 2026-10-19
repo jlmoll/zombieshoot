@@ -5,4 +5,4 @@ extends RefCounted
 const PLAYER_LAYER: int = 1
 const WALL_LAYER: int = 2
 const ENEMY_LAYER: int = 4
-static var UPGRADES: Array[Dictionary] = PerkCatalog.choices()
+static var upgrades: Array[Dictionary] = PerkCatalog.choices()

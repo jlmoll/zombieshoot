@@ -3,6 +3,7 @@ extends RefCounted
 
 
 static func run(tree: SceneTree) -> bool:
+	const GRENADE_SCENE = preload("res://scenes/projectiles/grenade.tscn")
 	var empty_campaign := WaveCampaign.new()
 	assert(not empty_campaign.get_configuration_errors().is_empty())
 	var missing_definition := WaveCampaign.new()
@@ -26,10 +27,8 @@ static func run(tree: SceneTree) -> bool:
 	assert(_contains(ContentValidator.validate_enemy(incomplete_ranged), "no ranged attack"))
 	incomplete_ranged.free()
 	assert(not ContentValidator.validate_projectile_scene(null).is_empty())
-	assert(not ContentValidator.validate_projectile_scene(
-		load("res://scenes/projectiles/grenade.tscn")).is_empty())
-	assert(ContentValidator.validate_grenade_scene(
-		load("res://scenes/projectiles/grenade.tscn")).is_empty())
+	assert(not (ContentValidator.validate_projectile_scene(GRENADE_SCENE).is_empty()))
+	assert(ContentValidator.validate_grenade_scene(GRENADE_SCENE).is_empty())
 	var arena := load("res://scenes/world/arena.tscn").instantiate() as Arena
 	var transformed_parent := Node3D.new()
 	transformed_parent.position = Vector3(75.0, 0.0, -41.0)
@@ -48,8 +47,10 @@ static func run(tree: SceneTree) -> bool:
 	rng.seed = 231
 	var point: Variant = arena.choose_spawn("walker", 1, arena.player_spawn.global_position, rng)
 	assert(point != null and arena.navigation.can_reach_target(point))
-	assert(point.distance_to(arena.player_spawn.global_position) < 40.0,
-		"Spawn points and navigation use global coordinates under transformed maps")
+	assert(
+		point.distance_to(arena.player_spawn.global_position) < 40.0,
+		"Spawn points and navigation use global coordinates under transformed maps"
+	)
 	var zone := SpawnZone.new()
 	zone.width = 0.0
 	arena.spawn_container.add_child(zone)

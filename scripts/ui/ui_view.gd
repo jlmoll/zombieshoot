@@ -81,7 +81,10 @@ func _button(node_name: String, text: String, action: Callable, primary: bool = 
 	button.add_theme_color_override("font_color", INK if primary else WHITE)
 	button.add_theme_color_override("font_hover_color", INK)
 	button.add_theme_color_override("font_focus_color", INK)
-	button.add_theme_stylebox_override("normal", _style(CYAN if primary else Color("182b36"), CYAN if primary else Color("34505b"), 5))
+	button.add_theme_stylebox_override(
+		"normal",
+		_style(CYAN if primary else Color("182b36"), CYAN if primary else Color("34505b"), 5)
+	)
 	button.add_theme_stylebox_override("hover", _style(WHITE, CYAN, 5))
 	button.add_theme_stylebox_override("pressed", _style(AMBER, AMBER, 5))
 	button.add_theme_stylebox_override("focus", _style(Color(0.4, 0.9, 0.82, 0.18), CYAN, 5))

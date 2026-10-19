@@ -32,3 +32,20 @@ menús, pausa, reinicios, victoria, derrota y fallos de configuración.
 Los tests de contrato utilizan APIs públicas cuando existen, por ejemplo
 `WaveDirector.advance()`. Los tests de fidelidad conservan inspección de
 la jerarquía del modelo porque esa estructura es su objeto de verificación.
+
+## Estilo automático
+
+Con las dependencias de `tools/requirements-dev.txt` instaladas en un entorno
+Python, ejecutar:
+
+```powershell
+python tools/format_gd.py
+python tools/format_gd.py --check
+python -m gdtoolkit.linter scripts tests addons tools
+```
+
+El normalizador ordena declaraciones y callbacks de forma estable y después
+aplica gdformat: 100 columnas, tabulaciones, UTF-8 y LF. Verifica que la
+reordenación conserve todos los nodos del AST y que el formato preserve su
+estructura y comentarios. La suite de integración conserva una excepción
+local al límite de mil líneas para mantener la partida completa en un runner.

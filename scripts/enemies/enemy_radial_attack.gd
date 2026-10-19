@@ -11,12 +11,15 @@ extends EnemyAttack
 
 
 func execute(
-		_source: Vector3, origin: Vector3, _target: Node3D,
-		_locked_target: Vector3, phase: float, enraged: bool
+	_source: Vector3,
+	origin: Vector3,
+	_target: Node3D,
+	_locked_target: Vector3,
+	phase: float,
+	enraged: bool
 ) -> void:
 	var count: int = enraged_count if enraged else projectile_count
 	for index in range(count):
 		var angle: float = TAU * float(index) / float(count) + phase * rotation_rate
-		emit_projectile(origin, Vector3(cos(angle), 0, sin(angle)),
-			damage, projectile_speed)
+		emit_projectile(origin, Vector3(cos(angle), 0, sin(angle)), damage, projectile_speed)
 	trauma_requested.emit(trauma)

@@ -5,19 +5,17 @@ extends Node3D
 enum Mode { TITLE, PLAYING, PAUSED, UPGRADES, DEAD, VICTORY }
 
 const RUN_SCENE: PackedScene = preload("res://scenes/gameplay/run_session.tscn")
-
 @export var map_scene: PackedScene = preload("res://scenes/world/arena.tscn")
 var arena: Arena
+var session: RunSession
+var mode: Mode = Mode.TITLE
+var _previous_health: float = 100.0
 @onready var camera_rig: IsometricCameraRig = $CameraRig
 @onready var audio: GameAudio = $Audio
 @onready var save_data: SaveData = $SaveData
 @onready var hud: GameHUD = $Interface
 @onready var cursor: AimCursor = $AimCursor
 @onready var session_slot: Node3D = $SessionSlot
-
-var session: RunSession
-var mode: Mode = Mode.TITLE
-var _previous_health: float = 100.0
 
 
 func _ready() -> void:
@@ -36,6 +34,97 @@ func _ready() -> void:
 		var smoke: Node = load("res://tests/smoke_test.gd").new()
 		add_child(smoke)
 		smoke.call_deferred("run", self)
+
+
+func _process(_delta: float) -> void:
+	if is_instance_valid(session) and mode != Mode.TITLE:
+		if session.player.health < _previous_health:
+			hud.set_damage_flash()
+		_previous_health = session.player.health
+		hud.update_stats(session.get_stats())
+
+
+func _shortcut_input(event: InputEvent) -> void:
+	if event.is_echo():
+		return
+	if event.is_action_pressed(&"game_pause"):
+		if mode == Mode.TITLE and event.is_action_pressed(&"game_start"):
+			_request_start()
+		else:
+			_toggle_pause()
+	elif event.is_action_pressed(&"game_fullscreen"):
+		var fullscreen: bool = (
+			DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+		)
+		DisplayServer.window_set_mode(
+			(
+				DisplayServer.WINDOW_MODE_WINDOWED
+				if fullscreen
+				else DisplayServer.WINDOW_MODE_FULLSCREEN
+			)
+		)
+	elif event.is_action_pressed(&"game_mute"):
+		_set_muted(not audio.muted)
+	else:
+		return
+	get_viewport().set_input_as_handled()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if (
+		event.is_action_pressed(&"game_start")
+		and mode == Mode.TITLE
+		and get_viewport().gui_get_focus_owner() == null
+	):
+		_request_start()
+		get_viewport().set_input_as_handled()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and mode == Mode.PLAYING:
+		pause_run()
+
+
+func start_run() -> void:
+	if not _new_session():
+		return
+	camera_rig.reset()
+	_set_mode(Mode.PLAYING)
+	hud.show_gameplay()
+	session.start()
+
+
+func show_title() -> void:
+	_set_mode(Mode.TITLE)
+	hud.show_title(save_data.best_score)
+
+
+func is_gameplay_active() -> bool:
+	return mode == Mode.PLAYING and not get_tree().paused
+
+
+func pause_run() -> void:
+	if mode == Mode.PLAYING:
+		_set_mode(Mode.PAUSED)
+		hud.show_pause()
+
+
+func resume_run() -> void:
+	if mode == Mode.PAUSED:
+		_set_mode(Mode.PLAYING)
+		hud.show_gameplay()
+
+
+func choose_upgrade(id: String) -> void:
+	if mode != Mode.UPGRADES:
+		return
+	session.player.apply_upgrade(id)
+	_set_mode(Mode.PLAYING)
+	hud.show_gameplay()
+	var delay: float = session.waves.get_intermission_duration()
+	hud.set_banner("SECTOR DESPEJADO", "SIGUIENTE OLEADA EN %.1f SEGUNDOS" % delay, 2.5)
+	session.waves.intermission = maxf(delay, 0.001)
+	audio.play_sound("upgrade")
 
 
 func _new_session() -> bool:
@@ -73,36 +162,6 @@ func _request_start() -> void:
 	start_run.call_deferred()
 
 
-func start_run() -> void:
-	if not _new_session():
-		return
-	camera_rig.reset()
-	_set_mode(Mode.PLAYING)
-	hud.show_gameplay()
-	session.start()
-
-
-func show_title() -> void:
-	_set_mode(Mode.TITLE)
-	hud.show_title(save_data.best_score)
-
-
-func is_gameplay_active() -> bool:
-	return mode == Mode.PLAYING and not get_tree().paused
-
-
-func pause_run() -> void:
-	if mode == Mode.PLAYING:
-		_set_mode(Mode.PAUSED)
-		hud.show_pause()
-
-
-func resume_run() -> void:
-	if mode == Mode.PAUSED:
-		_set_mode(Mode.PLAYING)
-		hud.show_gameplay()
-
-
 func _set_mode(next: Mode) -> void:
 	mode = next
 	get_tree().paused = mode != Mode.PLAYING
@@ -115,49 +174,6 @@ func _toggle_pause() -> void:
 		pause_run()
 	elif mode == Mode.PAUSED:
 		resume_run()
-
-
-func _shortcut_input(event: InputEvent) -> void:
-	if event.is_echo():
-		return
-	if event.is_action_pressed(&"game_pause"):
-		if mode == Mode.TITLE and event.is_action_pressed(&"game_start"):
-			_request_start()
-		else:
-			_toggle_pause()
-	elif event.is_action_pressed(&"game_fullscreen"):
-		var fullscreen: bool = DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
-		DisplayServer.window_set_mode(
-			DisplayServer.WINDOW_MODE_WINDOWED if fullscreen else DisplayServer.WINDOW_MODE_FULLSCREEN
-		)
-	elif event.is_action_pressed(&"game_mute"):
-		_set_muted(not audio.muted)
-	else:
-		return
-	get_viewport().set_input_as_handled()
-
-
-func _unhandled_input(event: InputEvent) -> void:
-	if (
-		event.is_action_pressed(&"game_start")
-		and mode == Mode.TITLE
-		and get_viewport().gui_get_focus_owner() == null
-	):
-		_request_start()
-		get_viewport().set_input_as_handled()
-
-
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and mode == Mode.PLAYING:
-		pause_run()
-
-
-func _process(_delta: float) -> void:
-	if is_instance_valid(session) and mode != Mode.TITLE:
-		if session.player.health < _previous_health:
-			hud.set_damage_flash()
-		_previous_health = session.player.health
-		hud.update_stats(session.get_stats())
 
 
 func _on_wave_started(number: int) -> void:
@@ -175,21 +191,9 @@ func _on_wave_cleared() -> void:
 		_end_run(true)
 		return
 	_set_mode(Mode.UPGRADES)
-	var choices: Array = GameRules.UPGRADES.duplicate(true)
+	var choices: Array = GameRules.upgrades.duplicate(true)
 	choices.shuffle()
 	hud.show_upgrades(choices.slice(0, 3))
-
-
-func choose_upgrade(id: String) -> void:
-	if mode != Mode.UPGRADES:
-		return
-	session.player.apply_upgrade(id)
-	_set_mode(Mode.PLAYING)
-	hud.show_gameplay()
-	var delay: float = session.waves.get_intermission_duration()
-	hud.set_banner("SECTOR DESPEJADO", "SIGUIENTE OLEADA EN %.1f SEGUNDOS" % delay, 2.5)
-	session.waves.intermission = maxf(delay, 0.001)
-	audio.play_sound("upgrade")
 
 
 func _on_player_died() -> void:

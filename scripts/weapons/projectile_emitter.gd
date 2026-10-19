@@ -6,8 +6,13 @@ signal projectile_requested(
 	origin: Vector3, direction: Vector3, damage: float, speed: float, pierce: int
 )
 signal projectile_spawn_requested(
-	origin: Vector3, direction: Vector3, damage: float, speed: float, pierce: int,
-	context: DamageContext, scene: PackedScene
+	origin: Vector3,
+	direction: Vector3,
+	damage: float,
+	speed: float,
+	pierce: int,
+	context: DamageContext,
+	scene: PackedScene
 )
 
 var _rng := RandomNumberGenerator.new()
@@ -18,9 +23,16 @@ func _ready() -> void:
 
 
 func emit_shot(
-		origin: Vector3, heading: Vector3, damage: float, speed: float,
-		pierce: int, pellets: int, spread: float, pellet_jitter: float,
-		context: DamageContext = null, scene: PackedScene = null
+	origin: Vector3,
+	heading: Vector3,
+	damage: float,
+	speed: float,
+	pierce: int,
+	pellets: int,
+	spread: float,
+	pellet_jitter: float,
+	context: DamageContext = null,
+	scene: PackedScene = null
 ) -> void:
 	for direction in get_directions(heading, pellets, spread, pellet_jitter):
 		projectile_requested.emit(origin, direction, damage, speed, pierce)
@@ -28,7 +40,7 @@ func emit_shot(
 
 
 func get_directions(
-		heading: Vector3, pellets: int, spread: float, pellet_jitter: float
+	heading: Vector3, pellets: int, spread: float, pellet_jitter: float
 ) -> Array[Vector3]:
 	var directions: Array[Vector3] = []
 	for pellet in range(maxi(1, pellets)):

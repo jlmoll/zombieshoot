@@ -9,29 +9,14 @@ signal menu_requested
 signal upgrade_selected(id: String)
 signal mute_toggled(enabled: bool)
 
-@onready var content_center: CenterContainer = $ContentCenter
 var _muted: bool = false
 var _sound_button: Button
+@onready var content_center: CenterContainer = $ContentCenter
 
 
 func _ready() -> void:
 	_style_label($DivisionStamp, 12, MUTED)
 	_style_label($Footer, 12, MUTED)
-
-
-func _clear_content() -> void:
-	for child in content_center.get_children():
-		content_center.remove_child(child)
-		child.queue_free()
-	_sound_button = null
-	show()
-
-
-func _screen(node_name: String, width: float) -> VBoxContainer:
-	_clear_content()
-	var column := _column(node_name, content_center, 18)
-	column.custom_minimum_size.x = width
-	return column
 
 
 func show_title(best: int) -> void:
@@ -56,19 +41,46 @@ func show_title(best: int) -> void:
 	left.add_child(_label("BestScore", "RÉCORD DE CONTENCIÓN   %06d" % best, 14, MUTED))
 	var right := _column("Instructions", _panel("InstructionsPanel", row, Vector2(430, 0)), 10)
 	right.add_child(_label("MissionHeading", "01 / SOBREVIVE A LA NOCHE", 19, CYAN))
-	var brief := _label("MissionBrief", "Ocho oleadas. Hordas crecientes.\nMejora tu equipo entre ataques y\nacaba con la amenaza del sector.", 17)
+	var brief := _label(
+		"MissionBrief",
+		(
+			"Ocho oleadas. Hordas crecientes.\n"
+			+ "Mejora tu equipo entre ataques y\nacaba con la amenaza del sector."
+		),
+		17
+	)
 	brief.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	right.add_child(brief)
 	var keyboard_separator := HSeparator.new()
 	keyboard_separator.name = "KeyboardSeparator"
 	right.add_child(keyboard_separator)
 	right.add_child(_label("KeyboardHeading", "TECLADO + RATÓN", 12, AMBER))
-	right.add_child(_label("KeyboardControls", "WASD   Moverse\nRatón + clic izq.   Apuntar / disparar\nEspacio   Esquivar\nG / clic derecho   Granada (+2/oleada, máx. 4)\nR   Recargar\nQ / 1–3 / rueda   Cambiar arma\nEsc / P   Pausa", 15, WHITE))
+	right.add_child(
+		_label(
+			"KeyboardControls",
+			(
+				"WASD   Moverse\nRatón + clic izq.   Apuntar / disparar\n"
+				+ "Espacio   Esquivar\nG / clic derecho   Granada (+2/oleada, máx. 4)\n"
+				+ "R   Recargar\nQ / 1–3 / rueda   Cambiar arma\nEsc / P   Pausa"
+			),
+			15,
+			WHITE
+		)
+	)
 	var controller_separator := HSeparator.new()
 	controller_separator.name = "ControllerSeparator"
 	right.add_child(controller_separator)
 	right.add_child(_label("ControllerHeading", "MANDO · DOBLE STICK", 12, AMBER))
-	right.add_child(_label("ControllerControls", "Izq. mover · Der. apuntar y disparar\nRT / RB disparar · A / LB esquivar\nB granada · X recargar · Y arma · Start pausa", 14))
+	right.add_child(
+		_label(
+			"ControllerControls",
+			(
+				"Izq. mover · Der. apuntar y disparar\nRT / RB disparar · A / LB esquivar\n"
+				+ "B granada · X recargar · Y arma · Start pausa"
+			),
+			14
+		)
+	)
 	_focus_when_ready.call_deferred(play)
 
 
@@ -88,12 +100,27 @@ func show_pause() -> void:
 
 func show_game_over(score: int, wave: int, best: int, victory: bool = false) -> void:
 	var column := _screen("VictoryScreen" if victory else "DefeatScreen", 620)
-	column.add_child(_label("TransmissionStatus", "TRANSMISIÓN FINAL // SECTOR 07", 14, CYAN if victory else RED))
+	column.add_child(
+		_label("TransmissionStatus", "TRANSMISIÓN FINAL // SECTOR 07", 14, CYAN if victory else RED)
+	)
 	column.add_child(_label("ResultHeading", "AMANECER" if victory else "SEÑAL PERDIDA", 60))
-	column.add_child(_label("ResultMessage", "Sector contenido. Has sobrevivido a la noche." if victory else "El turno ha terminado. Vuelve mejor preparado.", 18, MUTED))
+	column.add_child(
+		_label(
+			"ResultMessage",
+			(
+				"Sector contenido. Has sobrevivido a la noche."
+				if victory
+				else "El turno ha terminado. Vuelve mejor preparado."
+			),
+			18,
+			MUTED
+		)
+	)
 	var results := _column("ResultStats", _panel("ResultPanel", column), 8)
 	results.add_child(_label("FinalScore", "PUNTUACIÓN    %06d" % score, 32, AMBER))
-	results.add_child(_label("FinalWaveAndBest", "OLEADA  %02d     /     RÉCORD  %06d" % [wave, best], 18, CYAN))
+	results.add_child(
+		_label("FinalWaveAndBest", "OLEADA  %02d     /     RÉCORD  %06d" % [wave, best], 18, CYAN)
+	)
 	var again := _button("RestartButton", "NUEVA OPERACIÓN    →", restart_requested.emit, true)
 	column.add_child(again)
 	column.add_child(_button("MenuButton", "VOLVER AL MENÚ", menu_requested.emit))
@@ -104,7 +131,9 @@ func show_upgrades(choices: Array) -> void:
 	var column := _screen("UpgradeScreen", 1060)
 	column.add_child(_label("SupplyStatus", "SUMINISTROS DISPONIBLES", 14, CYAN))
 	column.add_child(_label("UpgradeHeading", "ADÁPTATE O CAE", 52))
-	column.add_child(_label("UpgradePrompt", "Elige una mejora permanente para esta operación.", 18, MUTED))
+	column.add_child(
+		_label("UpgradePrompt", "Elige una mejora permanente para esta operación.", 18, MUTED)
+	)
 	var row := HBoxContainer.new()
 	row.name = "UpgradeChoices"
 	row.add_theme_constant_override("separation", 18)
@@ -113,13 +142,17 @@ func show_upgrades(choices: Array) -> void:
 	for index in choices.size():
 		var choice: Dictionary = choices[index]
 		var id: String = str(choice.get("id", ""))
-		var card := _column("UpgradeContent", _panel("UpgradeCard%d" % (index + 1), row, Vector2(335, 255)), 14)
+		var card := _column(
+			"UpgradeContent", _panel("UpgradeCard%d" % (index + 1), row, Vector2(335, 255)), 14
+		)
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		card.add_child(_label("ChoiceNumber", "MEJORA / 0%d" % (index + 1), 12, CYAN))
 		var heading := _label("UpgradeTitle", str(choice.get("title", "MEJORA")), 23)
 		heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		card.add_child(heading)
-		var description := _label("UpgradeDescription", str(choice.get("description", "")), 16, MUTED)
+		var description := _label(
+			"UpgradeDescription", str(choice.get("description", "")), 16, MUTED
+		)
 		description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		description.custom_minimum_size = Vector2(285, 85)
 		description.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -130,6 +163,27 @@ func show_upgrades(choices: Array) -> void:
 			first = select
 	if first != null:
 		_focus_when_ready.call_deferred(first)
+
+
+func set_muted(enabled: bool) -> void:
+	_muted = enabled
+	if is_instance_valid(_sound_button):
+		_sound_button.text = _sound_text()
+
+
+func _clear_content() -> void:
+	for child in content_center.get_children():
+		content_center.remove_child(child)
+		child.queue_free()
+	_sound_button = null
+	show()
+
+
+func _screen(node_name: String, width: float) -> VBoxContainer:
+	_clear_content()
+	var column := _column(node_name, content_center, 18)
+	column.custom_minimum_size.x = width
+	return column
 
 
 func _focus_when_ready(control: Control) -> void:
@@ -150,9 +204,3 @@ func _sound_text() -> String:
 func _toggle_sound() -> void:
 	set_muted(not _muted)
 	mute_toggled.emit(_muted)
-
-
-func set_muted(enabled: bool) -> void:
-	_muted = enabled
-	if is_instance_valid(_sound_button):
-		_sound_button.text = _sound_text()

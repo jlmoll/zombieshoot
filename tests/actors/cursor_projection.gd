@@ -27,21 +27,34 @@ func run() -> void:
 	camera.make_current()
 	var center: Vector2 = root.get_visible_rect().get_center()
 	var ground: Variant = CursorProjection.project(camera, center)
-	check(ground != null and (ground as Vector3).is_equal_approx(Vector3(14.0, 0.0, -5.0)),
-		"projection uses the global floor even under translated parents")
+	check(
+		ground != null and (ground as Vector3).is_equal_approx(Vector3(14.0, 0.0, -5.0)),
+		"projection uses the global floor even under translated parents"
+	)
 	var muzzle: Variant = CursorProjection.project(camera, center, 0.95)
-	check(muzzle != null and is_equal_approx((muzzle as Vector3).y, 0.95),
-		"aiming can select an explicit global muzzle-height plane")
-	check(CursorProjection.project(camera, center, 12.0) == null,
-		"planes behind the camera produce no target")
+	check(
+		muzzle != null and is_equal_approx((muzzle as Vector3).y, 0.95),
+		"aiming can select an explicit global muzzle-height plane"
+	)
+	check(
+		CursorProjection.project(camera, center, 12.0) == null,
+		"planes behind the camera produce no target"
+	)
 	camera.rotation = Vector3.ZERO
-	check(CursorProjection.project(camera, center) == null,
-		"parallel rays produce no target")
-	check(CursorProjection.project(null, center) == null,
-		"a missing camera safely produces no target")
+	check(CursorProjection.project(camera, center) == null, "parallel rays produce no target")
+	check(
+		CursorProjection.project(null, center) == null, "a missing camera safely produces no target"
+	)
 	parent.queue_free()
 	await process_frame
-	print("CURSOR %s: %d checks, %d failures" % [
-		"PASSED" if failures == 0 else "FAILED", checks, failures,
-	])
+	print(
+		(
+			"CURSOR %s: %d checks, %d failures"
+			% [
+				"PASSED" if failures == 0 else "FAILED",
+				checks,
+				failures,
+			]
+		)
+	)
 	quit(0 if failures == 0 else 1)

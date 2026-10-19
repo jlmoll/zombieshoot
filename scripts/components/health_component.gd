@@ -7,7 +7,6 @@ signal health_changed(current: float, maximum: float)
 signal died
 
 @export_range(1.0, 100000.0) var maximum: float = 100.0
-
 var current: float = 100.0
 var depleted: bool = false
 var _initialized: bool = false

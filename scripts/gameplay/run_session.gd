@@ -6,14 +6,6 @@ signal wave_started(number: int)
 signal wave_cleared
 signal configuration_failed(errors: PackedStringArray)
 
-@onready var player: Survivor = $Player
-@onready var enemies: EnemySpawner = $Enemies
-@onready var combat: CombatService = $Combat
-@onready var pickups: PickupManager = $Pickups
-@onready var effects: ImpactEffects = $Effects
-@onready var waves: WaveDirector = $WaveDirector
-@onready var rewards: RunRewards = $Rewards
-
 var score: int:
 	get:
 		return rewards.score
@@ -23,6 +15,17 @@ var kills: int:
 var elapsed: float = 0.0
 var _audio: GameAudio
 var _navigation: HordeNavigation
+@onready var player: Survivor = $Player
+@onready var enemies: EnemySpawner = $Enemies
+@onready var combat: CombatService = $Combat
+@onready var pickups: PickupManager = $Pickups
+@onready var effects: ImpactEffects = $Effects
+@onready var waves: WaveDirector = $WaveDirector
+@onready var rewards: RunRewards = $Rewards
+
+
+func _physics_process(delta: float) -> void:
+	elapsed += delta
 
 
 func configure(map: Arena, audio: GameAudio, camera_rig: IsometricCameraRig) -> void:
@@ -74,14 +77,18 @@ func start() -> void:
 	waves.start()
 
 
-func _physics_process(delta: float) -> void:
-	elapsed += delta
-
-
 func get_stats() -> Dictionary:
 	var stats: Dictionary = player.get_stats()
-	stats.merge({"score": score, "wave": waves.wave, "wave_count": waves.get_wave_count(), "kills": kills,
-		"enemies": enemies.living_count() + waves.spawn_left, "time": elapsed})
+	stats.merge(
+		{
+			"score": score,
+			"wave": waves.wave,
+			"wave_count": waves.get_wave_count(),
+			"kills": kills,
+			"enemies": enemies.living_count() + waves.spawn_left,
+			"time": elapsed
+		}
+	)
 	return stats
 
 

@@ -8,15 +8,19 @@ signal projectile_requested(
 	origin: Vector3, direction: Vector3, damage: float, speed: float, pierce: int
 )
 signal projectile_spawn_requested(
-	origin: Vector3, direction: Vector3, damage: float, speed: float, pierce: int,
-	context: DamageContext, scene: PackedScene
+	origin: Vector3,
+	direction: Vector3,
+	damage: float,
+	speed: float,
+	pierce: int,
+	context: DamageContext,
+	scene: PackedScene
 )
 signal sound_requested(kind: String)
 signal trauma_requested(amount: float)
 
 @export_range(0.0, 2.0) var switch_delay: float = 0.12
 @export var switch_sound: String = "switch"
-
 var weapons: Array[Weapon] = []
 var selected_index: int = 0
 var cooldown_remaining: float = 0.0

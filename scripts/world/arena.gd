@@ -9,15 +9,20 @@ extends Node3D
 @export_range(0.1, 2.0) var navigation_clearance: float = 0.75
 @onready var navigation: HordeNavigation = get_node_or_null("Navigation") as HordeNavigation
 
+
 func _ready() -> void:
 	if not Engine.is_editor_hint():
 		if get_configuration_errors().is_empty():
 			rebuild_navigation()
 
+
 func rebuild_navigation() -> void:
 	navigation.configure_map(self, playable_area, navigation_cell_size, navigation_clearance)
 
-func choose_spawn(kind: String, wave: int, target_position: Vector3, rng: RandomNumberGenerator) -> Variant:
+
+func choose_spawn(
+	kind: String, wave: int, target_position: Vector3, rng: RandomNumberGenerator
+) -> Variant:
 	# Every factory-facing position, including the result, is in global coordinates.
 	if not is_instance_valid(spawn_container) or not is_instance_valid(navigation):
 		return null
@@ -35,10 +40,14 @@ func choose_spawn(kind: String, wave: int, target_position: Vector3, rng: Random
 			roll -= zone.weight
 			if roll <= 0.0:
 				var point := zone.sample(rng)
-				if point.distance_to(target_position) >= zone.minimum_distance and navigation.can_reach_target(point):
+				if (
+					point.distance_to(target_position) >= zone.minimum_distance
+					and navigation.can_reach_target(point)
+				):
 					return point
 				break
 	return null
+
 
 func has_spawn_for(kind: String, wave: int) -> bool:
 	if not is_instance_valid(spawn_container):

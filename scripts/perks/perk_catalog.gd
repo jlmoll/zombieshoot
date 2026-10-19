@@ -16,8 +16,11 @@ const EXTRA: Array[PerkDefinition] = [
 	preload("res://assets/perks/pierce.tres"),
 ]
 const ALIASES: Dictionary = {
-	"power": "damage", "movement": "speed", "vitality": "health",
-	"firerate": "fire_rate", "ammo": "magazine",
+	"power": "damage",
+	"movement": "speed",
+	"vitality": "health",
+	"firerate": "fire_rate",
+	"ammo": "magazine",
 }
 
 

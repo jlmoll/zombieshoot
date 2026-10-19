@@ -5,7 +5,7 @@ extends RefCounted
 
 
 static func validate_campaign(
-		campaign: WaveCampaign, arena: Arena, enemy_scenes: Dictionary[String, PackedScene]
+	campaign: WaveCampaign, arena: Arena, enemy_scenes: Dictionary[String, PackedScene]
 ) -> PackedStringArray:
 	var errors := PackedStringArray()
 	if campaign == null:
@@ -37,7 +37,9 @@ static func validate_campaign(
 	return errors
 
 
-static func validate_enemy_scenes(enemy_scenes: Dictionary[String, PackedScene]) -> PackedStringArray:
+static func validate_enemy_scenes(
+	enemy_scenes: Dictionary[String, PackedScene]
+) -> PackedStringArray:
 	var errors := PackedStringArray()
 	for kind in enemy_scenes:
 		var scene := enemy_scenes[kind]
@@ -68,7 +70,12 @@ static func validate_enemy(enemy: Zombie) -> PackedStringArray:
 				attack_count += 1
 				errors.append_array(validate_attack(child))
 			else:
-				errors.append("Enemy '%s' combat child '%s' needs an EnemyAttack payload." % [enemy.kind, child.name])
+				errors.append(
+					(
+						"Enemy '%s' combat child '%s' needs an EnemyAttack payload."
+						% [enemy.kind, child.name]
+					)
+				)
 		if enemy.movement != null and enemy.movement.keep_distance and attack_count == 0:
 			errors.append("Enemy '%s' keeps its distance but has no ranged attack." % enemy.kind)
 	return errors
@@ -78,9 +85,13 @@ static func validate_attack(attack: EnemyAttack) -> PackedStringArray:
 	var errors := PackedStringArray()
 	if attack.get_script() == preload("res://scripts/enemies/enemy_attack.gd"):
 		errors.append("Attack '%s' has no concrete payload." % attack.name)
-	if attack.attack_id.is_empty() or attack.minimum_distance < 0.0 \
-			or attack.maximum_distance <= attack.minimum_distance \
-			or attack.windup_duration <= 0.0 or attack.cooldown <= 0.0:
+	if (
+		attack.attack_id.is_empty()
+		or attack.minimum_distance < 0.0
+		or attack.maximum_distance <= attack.minimum_distance
+		or attack.windup_duration <= 0.0
+		or attack.cooldown <= 0.0
+	):
 		errors.append("Attack '%s' has invalid identity, range or timing." % attack.name)
 	if attack is EnemyFanAttack or attack is EnemyRadialAttack:
 		if attack.projectile_count < 1 or attack.projectile_speed <= 0.0 or attack.damage <= 0.0:
@@ -173,7 +184,9 @@ static func validate_tree(root: Node) -> PackedStringArray:
 		else:
 			errors.append_array(director.campaign.get_configuration_errors())
 			if not arenas.is_empty() and not registries.is_empty():
-				errors.append_array(validate_campaign(director.campaign, arenas[0], registries[0].enemy_scenes))
+				errors.append_array(
+					validate_campaign(director.campaign, arenas[0], registries[0].enemy_scenes)
+				)
 	return errors
 
 

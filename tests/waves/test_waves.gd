@@ -23,7 +23,10 @@ static func run(tree: SceneTree) -> bool:
 				expected = "spitter"
 			if number >= 3 and serial % 9 == 0:
 				expected = "brute"
-			assert(wave.get_enemy_kind(serial) == expected, "Global serial composition must be preserved")
+			assert(
+				wave.get_enemy_kind(serial) == expected,
+				"Global serial composition must be preserved"
+			)
 	var arena := load("res://scenes/world/arena.tscn").instantiate() as Arena
 	tree.root.add_child(arena)
 	arena.navigation.set_target(arena.player_spawn)
@@ -41,8 +44,11 @@ static func run(tree: SceneTree) -> bool:
 	var spawned: Array[String] = []
 	var failures: Array[PackedStringArray] = []
 	director.enemy_spawn_requested.connect(
-		func(kind: String, _point: Vector3, _wave: int) -> void: spawned.append(kind))
-	director.configuration_failed.connect(func(errors: PackedStringArray) -> void: failures.append(errors))
+		func(kind: String, _point: Vector3, _wave: int) -> void: spawned.append(kind)
+	)
+	director.configuration_failed.connect(
+		func(errors: PackedStringArray) -> void: failures.append(errors)
+	)
 	director.start()
 	director.advance(1.5)
 	assert(spawned.is_empty(), "Initial delay must elapse before first spawn")
@@ -56,7 +62,10 @@ static func run(tree: SceneTree) -> bool:
 		if zone is SpawnZone:
 			zone.minimum_distance = 10000.0
 	director.advance(1.0)
-	assert(not director.running and failures.size() == 1, "Impossible distance rules must fail in bounded time")
+	assert(
+		not director.running and failures.size() == 1,
+		"Impossible distance rules must fail in bounded time"
+	)
 	director.free()
 	spawner.free()
 	arena.free()

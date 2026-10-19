@@ -19,17 +19,15 @@ extends Node3D
 @export_range(0.1, 10.0) var death_playback_speed: float = 2.5
 @export_range(0.0, 30.0) var turn_speed: float = 10.0
 @export_range(0.01, 1.0) var attack_impact_fraction: float = 0.47
-
 var _visual_scale: float = 1.0
 var _dying: bool = false
 var _animation: AnimationPlayer
-
+@onready var warning: MeshInstance3D = $Indicators/AttackWarning
 @onready var _body: Node3D = $Body
 @onready var _model: Node3D = $Body/ZombieModel
 @onready var _variant_details: Node3D = $Body/VariantDetails
 @onready var _health_root: Node3D = $Indicators/HealthBar
 @onready var _health_fill: MeshInstance3D = $Indicators/HealthBar/Fill
-@onready var warning: MeshInstance3D = $Indicators/AttackWarning
 
 
 func _ready() -> void:
@@ -81,9 +79,7 @@ func show_health(health: float, maximum: float) -> void:
 	_health_fill.position.x = -0.45 * (1.0 - fraction)
 
 
-func animate(
-		delta: float, speed: float, movement: Vector3, facing: Vector3, flash: float
-) -> void:
+func animate(delta: float, speed: float, movement: Vector3, facing: Vector3, flash: float) -> void:
 	if _dying:
 		return
 	if facing.length_squared() > 0.001:

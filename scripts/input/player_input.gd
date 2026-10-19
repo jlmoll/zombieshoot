@@ -5,26 +5,44 @@ extends Node
 signal command_requested(command: StringName)
 
 const INTENTS: Array[StringName] = [
-	&"move_left", &"move_right", &"move_up", &"move_down",
-	&"aim_left", &"aim_right", &"aim_up", &"aim_down",
-	&"fire", &"dash", &"reload", &"grenade",
-	&"next_weapon", &"previous_weapon", &"weapon_1", &"weapon_2", &"weapon_3",
+	&"move_left",
+	&"move_right",
+	&"move_up",
+	&"move_down",
+	&"aim_left",
+	&"aim_right",
+	&"aim_up",
+	&"aim_down",
+	&"fire",
+	&"dash",
+	&"reload",
+	&"grenade",
+	&"next_weapon",
+	&"previous_weapon",
+	&"weapon_1",
+	&"weapon_2",
+	&"weapon_3",
 ]
 const COMMANDS: Array[StringName] = [
-	&"dash", &"reload", &"grenade", &"next_weapon", &"previous_weapon",
-	&"weapon_1", &"weapon_2", &"weapon_3",
+	&"dash",
+	&"reload",
+	&"grenade",
+	&"next_weapon",
+	&"previous_weapon",
+	&"weapon_1",
+	&"weapon_2",
+	&"weapon_3",
 ]
-
 @export_range(1, 2) var player_slot: int = 1
-## -2 keeps the devices authored in Input Map; -1 disables this profile's gamepad.
 @export_range(-2, 15) var gamepad_device: int = -2
 @export var mouse_aim_enabled: bool = true
 @export var stick_aim_fires: bool = true
-
 var mouse_aim_active: bool = false
 var _actions: Dictionary[StringName, StringName] = {}
 var _accepted: Dictionary[StringName, bool] = {}
 var _gamepad_bindings: Dictionary[StringName, Array] = {}
+
+## -2 keeps the devices authored in Input Map; -1 disables this profile's gamepad.
 
 
 func _ready() -> void:
@@ -117,9 +135,7 @@ func assign_gamepad(device: int) -> void:
 		Input.action_release(action)
 
 
-func _get_vector(
-		left: StringName, right: StringName, up: StringName, down: StringName
-) -> Vector2:
+func _get_vector(left: StringName, right: StringName, up: StringName, down: StringName) -> Vector2:
 	# Filter UI-consumed presses before applying the same radial deadzone as get_vector.
 	var vector := Vector2(_strength(right) - _strength(left), _strength(down) - _strength(up))
 	var deadzone: float = 0.0
@@ -144,7 +160,7 @@ func _on_joy_connection_changed(device: int, connected: bool) -> void:
 	for intent in INTENTS:
 		var action: StringName = _actions[intent]
 		for event in InputMap.action_get_events(action):
-			if (event is InputEventJoypadButton or event is InputEventJoypadMotion):
+			if event is InputEventJoypadButton or event is InputEventJoypadMotion:
 				if event.device == device:
 					Input.action_release(action)
 					_accepted.erase(intent)

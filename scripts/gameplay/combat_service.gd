@@ -5,37 +5,51 @@ extends Node3D
 const PLAYER_BULLET_SCENE := preload("res://scenes/projectiles/player_bullet.tscn")
 const ENEMY_BULLET_SCENE := preload("res://scenes/projectiles/enemy_bullet.tscn")
 const GRENADE_SCENE := preload("res://scenes/projectiles/grenade.tscn")
-
 @export var grenade_scene: PackedScene = GRENADE_SCENE
-
 var playable_area: CollisionShape3D
 var enemies: EnemySpawner
 var effects: ImpactEffects
 var audio: GameAudio
 var camera_rig: IsometricCameraRig
 var damage_targets: Array[Node3D] = []
-
 @onready var projectiles: Node3D = $Projectiles
 @onready var grenades: Node3D = $Grenades
 
 
 func spawn_player_bullet(
-		origin: Vector3, direction: Vector3, damage: float, speed: float, pierce: int = 0
+	origin: Vector3, direction: Vector3, damage: float, speed: float, pierce: int = 0
 ) -> void:
-	spawn_projectile(origin, direction, damage, speed, pierce,
-		DamageContext.create(null, null, DamageContext.Team.PLAYER), PLAYER_BULLET_SCENE)
+	spawn_projectile(
+		origin,
+		direction,
+		damage,
+		speed,
+		pierce,
+		DamageContext.create(null, null, DamageContext.Team.PLAYER),
+		PLAYER_BULLET_SCENE
+	)
 
 
-func spawn_enemy_bullet(
-		origin: Vector3, direction: Vector3, damage: float, speed: float
-) -> void:
-	spawn_projectile(origin, direction, damage, speed, 0,
-		DamageContext.create(null, null, DamageContext.Team.ENEMY), ENEMY_BULLET_SCENE)
+func spawn_enemy_bullet(origin: Vector3, direction: Vector3, damage: float, speed: float) -> void:
+	spawn_projectile(
+		origin,
+		direction,
+		damage,
+		speed,
+		0,
+		DamageContext.create(null, null, DamageContext.Team.ENEMY),
+		ENEMY_BULLET_SCENE
+	)
 
 
 func spawn_projectile(
-		origin: Vector3, direction: Vector3, damage: float, speed: float,
-		pierce: int, context: DamageContext, scene: PackedScene = PLAYER_BULLET_SCENE
+	origin: Vector3,
+	direction: Vector3,
+	damage: float,
+	speed: float,
+	pierce: int,
+	context: DamageContext,
+	scene: PackedScene = PLAYER_BULLET_SCENE
 ) -> Bullet:
 	if scene == null:
 		push_error("Cannot spawn a projectile without a PackedScene.")
@@ -59,8 +73,11 @@ func spawn_projectile(
 
 
 func spawn_grenade(
-		origin: Vector3, direction: Vector3, distance: float = 9.0,
-		context: DamageContext = null, scene: PackedScene = null
+	origin: Vector3,
+	direction: Vector3,
+	distance: float = 9.0,
+	context: DamageContext = null,
+	scene: PackedScene = null
 ) -> Grenade:
 	var packed: PackedScene = scene if scene != null else grenade_scene
 	if packed == null:
@@ -79,8 +96,10 @@ func spawn_grenade(
 		return null
 	grenade.playable_area = playable_area
 	grenades.add_child(grenade, true)
-	var provenance: DamageContext = context if context != null else DamageContext.create(
-		null, null, DamageContext.Team.PLAYER, &"grenade"
+	var provenance: DamageContext = (
+		context
+		if context != null
+		else DamageContext.create(null, null, DamageContext.Team.PLAYER, &"grenade")
 	)
 	grenade.configure(origin, direction, distance, provenance)
 	grenade.blast_requested.connect(detonate_grenade)
@@ -88,12 +107,14 @@ func spawn_grenade(
 
 
 func detonate_grenade(
-		at: Vector3, damage: float, radius: float, context: DamageContext = null
+	at: Vector3, damage: float, radius: float, context: DamageContext = null
 ) -> void:
 	if get_tree().paused or radius <= 0.0:
 		return
-	var provenance: DamageContext = context if context != null else DamageContext.create(
-		null, null, DamageContext.Team.PLAYER, &"grenade"
+	var provenance: DamageContext = (
+		context
+		if context != null
+		else DamageContext.create(null, null, DamageContext.Team.PLAYER, &"grenade")
 	)
 	var center := Vector3(at.x, maxf(0.35, at.y), at.z)
 	var candidates: Array[Node] = []
@@ -113,8 +134,11 @@ func detonate_grenade(
 		var query := PhysicsRayQueryParameters3D.create(center, target, GameRules.WALL_LAYER)
 		query.hit_from_inside = true
 		if get_world_3d().direct_space_state.intersect_ray(query).is_empty():
-			actor.call("take_damage", damage * lerpf(1.0, 0.7, distance / radius),
-				provenance.for_hit(target, target - center))
+			actor.call(
+				"take_damage",
+				damage * lerpf(1.0, 0.7, distance / radius),
+				provenance.for_hit(target, target - center)
+			)
 	if is_instance_valid(effects):
 		effects.spawn_particles(center, Color("ffc16c"), 12)
 	if is_instance_valid(camera_rig):

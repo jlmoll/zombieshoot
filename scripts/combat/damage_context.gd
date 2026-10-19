@@ -14,7 +14,7 @@ var _instigator: WeakRef
 
 
 static func create(
-		source: Node, instigator: Node, source_team: Team, id: StringName = &""
+	source: Node, instigator: Node, source_team: Team, id: StringName = &""
 ) -> DamageContext:
 	var context := DamageContext.new()
 	context._source = weakref(source) if is_instance_valid(source) else null

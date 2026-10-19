@@ -12,7 +12,6 @@ signal changed
 @export_range(0.0, 1.0) var emergency_health_threshold: float = 0.4
 @export_range(1, 100) var ammo_interval: int = 8
 @export_range(1, 100) var kill_sound_interval: int = 5
-
 var score: int = 0
 var kills: int = 0
 var pickups: PickupManager

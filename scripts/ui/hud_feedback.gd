@@ -2,13 +2,12 @@ class_name HudFeedback
 extends "res://scripts/ui/ui_view.gd"
 ## Transient presentation effects independent from menu composition and stats.
 
+var _banner_timer: float = 0.0
+var _flash_amount: float = 0.0
 @onready var banner: VBoxContainer = $Banner
 @onready var banner_title: Label = $Banner/TitleLabel
 @onready var banner_subtitle: Label = $Banner/SubtitleLabel
 @onready var damage_flash: ColorRect = $DamageFlash
-
-var _banner_timer: float = 0.0
-var _flash_amount: float = 0.0
 
 
 func _ready() -> void:

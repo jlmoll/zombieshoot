@@ -6,7 +6,6 @@ var _flash_remaining: float = 0.0
 var _recoil: float = 0.0
 var _recovery: float = 0.6
 var _rest_position := Vector3.ZERO
-
 @onready var recoil_root: Node3D = $RecoilRoot
 @onready var muzzle: Marker3D = $RecoilRoot/Muzzle
 @onready var flash: GeometryInstance3D = $RecoilRoot/Muzzle/Flash

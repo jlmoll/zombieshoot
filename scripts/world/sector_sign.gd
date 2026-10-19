@@ -10,8 +10,10 @@ extends Node3D
 		caption = value
 		_refresh()
 
+
 func _ready() -> void:
 	_refresh()
+
 
 func _refresh() -> void:
 	var number := get_node_or_null("Number") as Label3D

@@ -11,7 +11,6 @@ extends Node
 @export_range(0.0, 2.0) var separation_margin: float = 0.12
 @export_range(0.0, 10.0) var separation_strength: float = 3.8
 @export_range(0.0, 10.0) var maximum_separation: float = 3.0
-
 var navigation: HordeNavigation
 var neighbors: Callable
 var separation := Vector3.ZERO
@@ -25,9 +24,7 @@ func _ready() -> void:
 	_navigation_remaining = _rng.randf() * navigation_interval
 
 
-func get_direction(
-		delta: float, actor: Zombie, target_position: Vector3, phase: float
-) -> Vector3:
+func get_direction(delta: float, actor: Zombie, target_position: Vector3, phase: float) -> Vector3:
 	var difference: Vector3 = target_position - actor.global_position
 	difference.y = 0.0
 	var heading := difference.normalized()

@@ -13,7 +13,17 @@ var _clock: float = 0.0
 var _minimum: Vector2i
 var _maximum: Vector2i
 
-func configure_map(map: Node3D, area: CollisionShape3D, resolution: float, clearance: float) -> void:
+
+func _physics_process(delta: float) -> void:
+	_clock -= delta
+	if _clock <= 0.0:
+		_clock = 0.3
+		rebuild()
+
+
+func configure_map(
+	map: Node3D, area: CollisionShape3D, resolution: float, clearance: float
+) -> void:
 	cell_size = maxf(resolution, 0.25)
 	var box := area.shape as BoxShape3D
 	var corners := _box_polygon(area.global_transform, box.size)
@@ -32,76 +42,31 @@ func configure_map(map: Node3D, area: CollisionShape3D, resolution: float, clear
 		for z in range(_minimum.y, _maximum.y + 1):
 			var cell := Vector2i(x, z)
 			var point := Vector2(x, z) * cell_size
-			if not Geometry2D.is_point_in_polygon(point, playable_polygon) or _inside_obstacle(point):
+			if (
+				not Geometry2D.is_point_in_polygon(point, playable_polygon)
+				or _inside_obstacle(point)
+			):
 				blocked[cell] = true
 	rebuild()
 
-func _box_polygon(transform: Transform3D, size: Vector3) -> PackedVector2Array:
-	var points := PackedVector2Array()
-	for corner in [Vector3(-1, 0, -1), Vector3(1, 0, -1), Vector3(1, 0, 1), Vector3(-1, 0, 1)]:
-		var point: Vector3 = transform * (corner * size * 0.5)
-		points.append(Vector2(point.x, point.z))
-	return points
-
-func _collect_shapes(node: Node, clearance: float) -> void:
-	if node is CollisionShape3D and not node.disabled and node.get_parent() is StaticBody3D:
-		var body := node.get_parent() as StaticBody3D
-		if body.collision_layer & GameRules.WALL_LAYER:
-			_add_shape(node.shape, node.global_transform, clearance)
-	elif node is GridMap and node.mesh_library != null and node.collision_layer & GameRules.WALL_LAYER:
-		for cell: Vector3i in node.get_used_cells():
-			var orientation: Basis = node.get_basis_with_orthogonal_index(node.get_cell_item_orientation(cell))
-			var cell_transform := Transform3D(orientation.scaled(Vector3.ONE * node.cell_scale), node.map_to_local(cell))
-			var shapes: Array = node.mesh_library.get_item_shapes(node.get_cell_item(cell))
-			for index in range(0, shapes.size(), 2):
-				_add_shape(shapes[index], node.global_transform * cell_transform * shapes[index + 1], clearance)
-	for child in node.get_children():
-		_collect_shapes(child, clearance)
-
-func _add_shape(shape: Shape3D, transform: Transform3D, clearance: float) -> void:
-	var polygon := PackedVector2Array()
-	if shape is BoxShape3D:
-		polygon = _box_polygon(transform, shape.size)
-	elif shape is SphereShape3D or shape is CapsuleShape3D or shape is CylinderShape3D:
-		for index in range(24):
-			var angle: float = TAU * index / 24.0
-			var p: Vector3 = transform * Vector3(cos(angle) * shape.radius, 0, sin(angle) * shape.radius)
-			polygon.append(Vector2(p.x, p.z))
-	else:
-		push_warning("Navigation: unsupported collision shape; use boxes, spheres, capsules or cylinders.")
-	if not polygon.is_empty():
-		for inflated in Geometry2D.offset_polygon(polygon, clearance):
-			polygons.append(inflated)
-			var rect := Rect2(inflated[0], Vector2.ZERO)
-			for point in inflated:
-				rect = rect.expand(point)
-			obstacles.append(rect)
-
-func _inside_obstacle(point: Vector2) -> bool:
-	for polygon in polygons:
-		if Geometry2D.is_point_in_polygon(point, polygon):
-			return true
-	return false
-
-func _cell(point: Vector3) -> Vector2i:
-	return Vector2i(roundi(point.x / cell_size), roundi(point.z / cell_size))
 
 func is_walkable(point: Vector3) -> bool:
-	return Geometry2D.is_point_in_polygon(Vector2(point.x, point.z), playable_polygon) and not blocked.has(_cell(point)) and not _inside_obstacle(Vector2(point.x, point.z))
+	return (
+		Geometry2D.is_point_in_polygon(Vector2(point.x, point.z), playable_polygon)
+		and not blocked.has(_cell(point))
+		and not _inside_obstacle(Vector2(point.x, point.z))
+	)
+
 
 func can_reach_target(point: Vector3) -> bool:
 	return is_walkable(point) and flow.has(_cell(point))
+
 
 func set_target(actor: Node3D) -> void:
 	target = actor
 	_clock = 0.0
 	rebuild()
 
-func _physics_process(delta: float) -> void:
-	_clock -= delta
-	if _clock <= 0.0:
-		_clock = 0.3
-		rebuild()
 
 func rebuild() -> void:
 	flow.clear()
@@ -116,10 +81,18 @@ func rebuild() -> void:
 		head += 1
 		for step in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 			var next: Vector2i = cell + step
-			if next.x < _minimum.x or next.x > _maximum.x or next.y < _minimum.y or next.y > _maximum.y or blocked.has(next) or flow.has(next):
+			if (
+				next.x < _minimum.x
+				or next.x > _maximum.x
+				or next.y < _minimum.y
+				or next.y > _maximum.y
+				or blocked.has(next)
+				or flow.has(next)
+			):
 				continue
 			flow[next] = -step
 			queue.append(next)
+
 
 func get_direction(from: Vector3, to: Vector3) -> Vector3:
 	var flat := Vector3(to.x - from.x, 0, to.z - from.z)
@@ -131,7 +104,12 @@ func get_direction(from: Vector3, to: Vector3) -> Vector3:
 			clear = false
 			break
 		for index in range(polygon.size()):
-			if Geometry2D.segment_intersects_segment(a, b, polygon[index], polygon[(index + 1) % polygon.size()]) != null:
+			if (
+				Geometry2D.segment_intersects_segment(
+					a, b, polygon[index], polygon[(index + 1) % polygon.size()]
+				)
+				!= null
+			):
 				clear = false
 				break
 		if not clear:
@@ -141,7 +119,10 @@ func get_direction(from: Vector3, to: Vector3) -> Vector3:
 	var cell := _cell(from)
 	if flow.has(cell):
 		var step: Vector2i = flow[cell]
-		return (Vector3(cell.x + step.x, 0, cell.y + step.y) * cell_size - Vector3(from.x, 0, from.z)).normalized()
+		return (
+			(Vector3(cell.x + step.x, 0, cell.y + step.y) * cell_size - Vector3(from.x, 0, from.z))
+			. normalized()
+		)
 	var best := flat.normalized()
 	var nearest: float = INF
 	for x in range(-2, 3):
@@ -154,3 +135,74 @@ func get_direction(from: Vector3, to: Vector3) -> Vector3:
 					nearest = distance
 					best = (waypoint - from).normalized()
 	return best
+
+
+func _box_polygon(transform: Transform3D, size: Vector3) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for corner in [Vector3(-1, 0, -1), Vector3(1, 0, -1), Vector3(1, 0, 1), Vector3(-1, 0, 1)]:
+		var point: Vector3 = transform * (corner * size * 0.5)
+		points.append(Vector2(point.x, point.z))
+	return points
+
+
+func _collect_shapes(node: Node, clearance: float) -> void:
+	if node is CollisionShape3D and not node.disabled and node.get_parent() is StaticBody3D:
+		var body := node.get_parent() as StaticBody3D
+		if body.collision_layer & GameRules.WALL_LAYER:
+			_add_shape(node.shape, node.global_transform, clearance)
+	elif (
+		node is GridMap
+		and node.mesh_library != null
+		and node.collision_layer & GameRules.WALL_LAYER
+	):
+		for cell: Vector3i in node.get_used_cells():
+			var orientation: Basis = node.get_basis_with_orthogonal_index(
+				node.get_cell_item_orientation(cell)
+			)
+			var cell_transform := Transform3D(
+				orientation.scaled(Vector3.ONE * node.cell_scale), node.map_to_local(cell)
+			)
+			var shapes: Array = node.mesh_library.get_item_shapes(node.get_cell_item(cell))
+			for index in range(0, shapes.size(), 2):
+				_add_shape(
+					shapes[index],
+					node.global_transform * cell_transform * shapes[index + 1],
+					clearance
+				)
+	for child in node.get_children():
+		_collect_shapes(child, clearance)
+
+
+func _add_shape(shape: Shape3D, transform: Transform3D, clearance: float) -> void:
+	var polygon := PackedVector2Array()
+	if shape is BoxShape3D:
+		polygon = _box_polygon(transform, shape.size)
+	elif shape is SphereShape3D or shape is CapsuleShape3D or shape is CylinderShape3D:
+		for index in range(24):
+			var angle: float = TAU * index / 24.0
+			var p: Vector3 = (
+				transform * Vector3(cos(angle) * shape.radius, 0, sin(angle) * shape.radius)
+			)
+			polygon.append(Vector2(p.x, p.z))
+	else:
+		push_warning(
+			"Navigation: unsupported collision shape; use boxes, spheres, capsules or cylinders."
+		)
+	if not polygon.is_empty():
+		for inflated in Geometry2D.offset_polygon(polygon, clearance):
+			polygons.append(inflated)
+			var rect := Rect2(inflated[0], Vector2.ZERO)
+			for point in inflated:
+				rect = rect.expand(point)
+			obstacles.append(rect)
+
+
+func _inside_obstacle(point: Vector2) -> bool:
+	for polygon in polygons:
+		if Geometry2D.is_point_in_polygon(point, polygon):
+			return true
+	return false
+
+
+func _cell(point: Vector3) -> Vector2i:
+	return Vector2i(roundi(point.x / cell_size), roundi(point.z / cell_size))

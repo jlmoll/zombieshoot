@@ -9,7 +9,6 @@ signal enemy_spawn_requested(kind: String, at: Vector3, wave_number: int)
 signal configuration_failed(errors: PackedStringArray)
 
 @export var campaign: WaveCampaign = preload("res://assets/waves/default_campaign.tres")
-
 var wave: int = 0
 var spawn_left: int = 0
 var spawn_clock: float = 0.0
@@ -26,11 +25,17 @@ var enemy_scenes: Dictionary[String, PackedScene] = {}
 var _definition: WaveDefinition
 var _blocked_duration: float = 0.0
 
+
 func _ready() -> void:
 	if Engine.is_editor_hint():
 		set_physics_process(false)
 		return
 	rng.randomize()
+
+
+func _physics_process(delta: float) -> void:
+	advance(delta)
+
 
 func start() -> void:
 	var errors := get_configuration_errors(map, enemy_scenes)
@@ -48,6 +53,7 @@ func start() -> void:
 	running = true
 	start_next_wave()
 
+
 func start_next_wave() -> void:
 	if campaign == null or wave >= campaign.waves.size():
 		running = false
@@ -63,9 +69,6 @@ func start_next_wave() -> void:
 	if not _definition.boss_kind.is_empty():
 		boss_pending = true
 		_try_spawn_boss()
-
-func _physics_process(delta: float) -> void:
-	advance(delta)
 
 
 func advance(delta: float) -> void:
@@ -95,14 +98,6 @@ func advance(delta: float) -> void:
 		wave_finished = true
 		_emit_wave_cleared.call_deferred()
 
-func _emit_wave_cleared() -> void:
-	if running and is_inside_tree():
-		# Pause can arrive after the physics tick but before this deferred callback.
-		# Recheck after resuming instead of silently losing the completed wave.
-		if get_tree().paused:
-			wave_finished = false
-			return
-		wave_cleared.emit()
 
 func spawn_next() -> void:
 	if _definition == null or not running or spawn_left <= 0:
@@ -116,13 +111,6 @@ func spawn_next() -> void:
 	spawn_serial = next_serial
 	_blocked_duration = 0.0
 	enemy_spawn_requested.emit(kind, point, wave)
-
-func _try_spawn_boss() -> void:
-	var point: Variant = map.choose_spawn(_definition.boss_kind, wave, target.global_position, rng)
-	if point != null:
-		boss_pending = false
-		_blocked_duration = 0.0
-		enemy_spawn_requested.emit(_definition.boss_kind, point, wave)
 
 
 func get_wave_count() -> int:
@@ -138,27 +126,51 @@ func get_intermission_duration() -> float:
 
 
 func get_configuration_errors(
-		arena: Arena, registered_scenes: Dictionary[String, PackedScene]
+	arena: Arena, registered_scenes: Dictionary[String, PackedScene]
 ) -> PackedStringArray:
 	return ContentValidator.validate_campaign(campaign, arena, registered_scenes)
+
+
+func report_spawn_failure(message: String) -> void:
+	_fail_configuration(PackedStringArray([message]))
+
+
+func _emit_wave_cleared() -> void:
+	if running and is_inside_tree():
+		# Pause can arrive after the physics tick but before this deferred callback.
+		# Recheck after resuming instead of silently losing the completed wave.
+		if get_tree().paused:
+			wave_finished = false
+			return
+		wave_cleared.emit()
+
+
+func _try_spawn_boss() -> void:
+	var point: Variant = map.choose_spawn(_definition.boss_kind, wave, target.global_position, rng)
+	if point != null:
+		boss_pending = false
+		_blocked_duration = 0.0
+		enemy_spawn_requested.emit(_definition.boss_kind, point, wave)
 
 
 func _record_blocked_spawn(delta: float) -> void:
 	_blocked_duration += delta
 	if _blocked_duration >= _definition.blocked_spawn_timeout:
-		_fail_configuration(PackedStringArray([
-			"Wave %d: no reachable spawn satisfies its entrance and distance rules for %.1f seconds."
-			% [wave, _definition.blocked_spawn_timeout]
-		]))
+		_fail_configuration(
+			PackedStringArray(
+				[
+					(
+						"Wave %d: no reachable spawn satisfies its entrance and distance rules for %.1f seconds."
+						% [wave, _definition.blocked_spawn_timeout]
+					)
+				]
+			)
+		)
 
 
 func _fail_configuration(errors: PackedStringArray) -> void:
 	running = false
 	configuration_failed.emit(errors)
-
-
-func report_spawn_failure(message: String) -> void:
-	_fail_configuration(PackedStringArray([message]))
 
 
 func _get_configuration_warnings() -> PackedStringArray:

@@ -5,6 +5,7 @@ extends Node
 var _reticle: ImageTexture
 var _enabled: bool = false
 
+
 func _ready() -> void:
 	var bitmap: Image = Image.create(32, 32, false, Image.FORMAT_RGBA8)
 	bitmap.fill(Color.TRANSPARENT)
@@ -16,12 +17,18 @@ func _ready() -> void:
 				bitmap.set_pixel(x, y, Color("edfff7"))
 	_reticle = ImageTexture.create_from_image(bitmap)
 
-func set_gameplay(enabled: bool) -> void:
-	if _enabled == enabled:
-		return
-	_enabled = enabled
-	Input.set_custom_mouse_cursor(_reticle if enabled else null, Input.CURSOR_ARROW, Vector2(16, 16) if enabled else Vector2.ZERO)
 
 func _exit_tree() -> void:
 	if _enabled:
 		Input.set_custom_mouse_cursor(null)
+
+
+func set_gameplay(enabled: bool) -> void:
+	if _enabled == enabled:
+		return
+	_enabled = enabled
+	Input.set_custom_mouse_cursor(
+		_reticle if enabled else null,
+		Input.CURSOR_ARROW,
+		Vector2(16, 16) if enabled else Vector2.ZERO
+	)

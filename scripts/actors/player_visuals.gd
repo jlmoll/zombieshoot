@@ -21,7 +21,9 @@ func _ready() -> void:
 	_gun = _model.find_child("WeaponSocket", true, false) as Node3D
 	_gun_rest = _gun.position
 	# Imported resources are shared: localize loops and temporary dash emission.
-	var library: AnimationLibrary = _animation.get_animation_library("").duplicate(true) as AnimationLibrary
+	var library: AnimationLibrary = (
+		_animation.get_animation_library("").duplicate(true) as AnimationLibrary
+	)
 	_animation.remove_animation_library("")
 	_animation.add_animation_library("", library)
 	for clip: StringName in [&"Idle", &"Walk", &"Aim"]:
@@ -71,7 +73,16 @@ func reset_pose() -> void:
 	_set_dash_glow(false)
 
 
-func animate(delta: float, direction: Vector3, movement_speed: float, invulnerability: float, dash_remaining: float, movement_direction: Vector3 = Vector3.ZERO, reloading: bool = false, reload_progress: float = 0.0) -> void:
+func animate(
+	delta: float,
+	direction: Vector3,
+	movement_speed: float,
+	invulnerability: float,
+	dash_remaining: float,
+	movement_direction: Vector3 = Vector3.ZERO,
+	reloading: bool = false,
+	reload_progress: float = 0.0
+) -> void:
 	if _dying:
 		return
 	_aim_left = maxf(0.0, _aim_left - delta)
@@ -92,7 +103,9 @@ func animate(delta: float, direction: Vector3, movement_speed: float, invulnerab
 			reload_clip = &"WalkReloadBack" if backwards else &"WalkReload"
 		_play_clip(reload_clip, 1.0)
 		# Reload upgrades change duration; the authored action follows ammo progress.
-		_animation.seek(clampf(reload_progress, 0.0, 0.999) * _animation.get_animation(reload_clip).length, true)
+		_animation.seek(
+			clampf(reload_progress, 0.0, 0.999) * _animation.get_animation(reload_clip).length, true
+		)
 	elif moving:
 		_play_clip(&"Walk", clampf(movement_speed / 4.3, 0.55, 2.2) * (-1.0 if backwards else 1.0))
 	else:
@@ -124,7 +137,10 @@ func _play_clip(clip: StringName, rate: float) -> void:
 
 
 func _locomotion_track(path: NodePath) -> bool:
-	return str(path).contains("LowerBody_Pivot") or path.get_name(path.get_name_count() - 1) == &"Body_Motion"
+	return (
+		str(path).contains("LowerBody_Pivot")
+		or path.get_name(path.get_name_count() - 1) == &"Body_Motion"
+	)
 
 
 func _add_moving_reload(library: AnimationLibrary, backwards: bool) -> void:
@@ -143,7 +159,12 @@ func _add_moving_reload(library: AnimationLibrary, backwards: bool) -> void:
 		if backwards:
 			var keys: Array[Dictionary] = []
 			for key: int in range(combined.track_get_key_count(added)):
-				keys.append({"time": combined.length - combined.track_get_key_time(added, key), "value": combined.track_get_key_value(added, key)})
+				keys.append(
+					{
+						"time": combined.length - combined.track_get_key_time(added, key),
+						"value": combined.track_get_key_value(added, key)
+					}
+				)
 			while combined.track_get_key_count(added) > 0:
 				combined.track_remove_key(added, 0)
 			for key: Dictionary in keys:

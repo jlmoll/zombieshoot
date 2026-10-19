@@ -2,6 +2,7 @@ class_name ImpactEffects
 extends Node3D
 ## Bounded, run-scoped particles; ownership handles restart cleanup.
 
+
 func spawn_particles(at: Vector3, color: Color, count: int) -> void:
 	if get_child_count() >= 35:
 		return

@@ -4,8 +4,13 @@ extends Node
 
 signal projectile_requested(origin: Vector3, direction: Vector3, damage: float, speed: float)
 signal projectile_spawn_requested(
-	origin: Vector3, direction: Vector3, damage: float, speed: float, pierce: int,
-	context: DamageContext, scene: PackedScene
+	origin: Vector3,
+	direction: Vector3,
+	damage: float,
+	speed: float,
+	pierce: int,
+	context: DamageContext,
+	scene: PackedScene
 )
 signal particles_requested(at: Vector3, color: Color, count: int)
 signal trauma_requested(amount: float)
@@ -18,7 +23,6 @@ signal trauma_requested(amount: float)
 @export_range(0.01, 20.0) var cooldown: float = 2.7
 @export_range(0.0, 20.0) var warning_radius: float = 1.3
 @export var scale_warning_with_model: bool = true
-
 var carrier: Node
 
 
@@ -29,9 +33,7 @@ func make_damage_context() -> DamageContext:
 	return DamageContext.create(self, carrier, team, attack_id)
 
 
-func emit_projectile(
-		origin: Vector3, direction: Vector3, damage: float, speed: float
-) -> void:
+func emit_projectile(origin: Vector3, direction: Vector3, damage: float, speed: float) -> void:
 	projectile_requested.emit(origin, direction, damage, speed)
 	projectile_spawn_requested.emit(
 		origin, direction, damage, speed, 0, make_damage_context(), projectile_scene
@@ -43,7 +45,11 @@ func can_start(distance: float) -> bool:
 
 
 func execute(
-		_source: Vector3, _origin: Vector3, _target: Node3D,
-		_locked_target: Vector3, _phase: float, _enraged: bool
+	_source: Vector3,
+	_origin: Vector3,
+	_target: Node3D,
+	_locked_target: Vector3,
+	_phase: float,
+	_enraged: bool
 ) -> void:
 	pass

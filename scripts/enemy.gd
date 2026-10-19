@@ -5,8 +5,13 @@ extends CharacterBody3D
 
 signal enemy_bullet_requested(origin: Vector3, direction: Vector3, damage: float, speed: float)
 signal projectile_spawn_requested(
-	origin: Vector3, direction: Vector3, damage: float, speed: float, pierce: int,
-	context: DamageContext, scene: PackedScene
+	origin: Vector3,
+	direction: Vector3,
+	damage: float,
+	speed: float,
+	pierce: int,
+	context: DamageContext,
+	scene: PackedScene
 )
 signal sound_requested(kind: String)
 signal particles_requested(at: Vector3, color: Color, count: int)
@@ -49,7 +54,6 @@ signal defeated(enemy: Node3D)
 @export var combat: EnemyCombat
 @export var attack_origin: Marker3D
 @export var health_component: HealthComponent
-
 var health: float:
 	get:
 		return health_component.current
@@ -108,8 +112,13 @@ func _physics_process(delta: float) -> void:
 	var to_target := difference.normalized()
 	var desired: Vector3 = movement.get_direction(delta, self, target.global_position, _clock)
 	var attacking: bool = combat.advance(
-		delta, distance, global_position, attack_origin.global_position,
-		target, _clock, health < max_health * 0.5
+		delta,
+		distance,
+		global_position,
+		attack_origin.global_position,
+		target,
+		_clock,
+		health < max_health * 0.5
 	)
 	if attacking:
 		desired = Vector3.ZERO
@@ -136,14 +145,6 @@ func _physics_process(delta: float) -> void:
 		if target.has_method("take_damage"):
 			var context := DamageContext.create(self, self, team, &"contact")
 			target.take_damage(contact_damage, context.for_hit(target.global_position, to_target))
-
-
-func _get_configuration_warnings() -> PackedStringArray:
-	if visuals == null or movement == null or combat == null or attack_origin == null:
-		return ["Assign Visuals, Movement, Combat and AttackOrigin components."]
-	if health_component == null:
-		return ["Assign a HealthComponent scene."]
-	return []
 
 
 func configure_wave(wave: int) -> void:
@@ -189,6 +190,14 @@ func heal(amount: float) -> void:
 		visuals.show_health(health, max_health)
 
 
+func _get_configuration_warnings() -> PackedStringArray:
+	if visuals == null or movement == null or combat == null or attack_origin == null:
+		return ["Assign Visuals, Movement, Combat and AttackOrigin components."]
+	if health_component == null:
+		return ["Assign a HealthComponent scene."]
+	return []
+
+
 func _refresh_dimensions() -> void:
 	var collider := get_node_or_null("CollisionShape3D") as CollisionShape3D
 	if collider != null:
@@ -209,9 +218,7 @@ func _die() -> void:
 	collision_layer = 0
 	collision_mask = 0
 	set_physics_process(false)
-	particles_requested.emit(
-		global_position + Vector3.UP * 0.65, death_color, death_particle_count
-	)
+	particles_requested.emit(global_position + Vector3.UP * 0.65, death_color, death_particle_count)
 	defeated.emit(self)
 	var death_duration: float = visuals.play_death()
 	await get_tree().create_timer(death_duration + corpse_linger, false).timeout
