@@ -9,6 +9,7 @@ signal restart_requested
 signal menu_requested
 signal upgrade_selected(id: String)
 signal mute_toggled(enabled: bool)
+signal lighting_selected(preset: int)
 
 @onready var gameplay: GameplayHUD = $GameplayHUD
 @onready var menus: MenuScreens = $MenuScreens
@@ -22,6 +23,7 @@ func _ready() -> void:
 	menus.menu_requested.connect(menu_requested.emit)
 	menus.upgrade_selected.connect(upgrade_selected.emit)
 	menus.mute_toggled.connect(mute_toggled.emit)
+	menus.lighting_selected.connect(lighting_selected.emit)
 
 
 func show_title(best: int) -> void:
@@ -72,3 +74,7 @@ func set_damage_flash() -> void:
 
 func set_muted(enabled: bool) -> void:
 	menus.set_muted(enabled)
+
+
+func set_lighting_preset(preset: int) -> void:
+	menus.set_lighting_preset(preset)

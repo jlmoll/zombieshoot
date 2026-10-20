@@ -1,18 +1,18 @@
 [gd_scene format=3]
 
+[ext_resource type="ArrayMesh" path="res://assets/meshes/pillar_beveled.tres" id="beveled"]
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kk1nn"]
 albedo_color = Color(0.20392157, 0.29411766, 0.33333334, 1)
-roughness = 0.85
+roughness = 0.42
 
-[sub_resource type="BoxMesh" id="BoxMesh_ytplx"]
-size = Vector3(1.5, 2.6, 1.5)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_sj5oi"]
 size = Vector3(1.5, 2.6, 1.5)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xvgr6"]
 albedo_color = Color(0.3764706, 0.81960785, 0.7607843, 1)
-roughness = 0.85
+roughness = 0.42
 emission_enabled = true
 emission = Color(0.3764706, 0.81960785, 0.7607843, 1)
 emission_energy_multiplier = 0.7
@@ -26,7 +26,7 @@ collision_mask = 0
 
 [node name="Block" type="MeshInstance3D" parent="." unique_id=1465459910]
 material_override = SubResource("StandardMaterial3D_kk1nn")
-mesh = SubResource("BoxMesh_ytplx")
+mesh = ExtResource("beveled")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=122640316]
 shape = SubResource("BoxShape3D_sj5oi")

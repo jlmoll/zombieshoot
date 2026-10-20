@@ -120,6 +120,7 @@ func _run() -> void:
 	world.audio.muted = true
 	_check(world.mode == world.Mode.TITLE and paused, "title pauses the simulation")
 	await _test_menu_focus()
+	await _test_lighting_preferences()
 	await _test_lifecycle_and_player()
 	await _test_session_isolation()
 	await _test_map_authoring()
@@ -152,6 +153,45 @@ func _test_menu_focus() -> void:
 	)
 	world.audio.muted = true
 	world.hud.set_muted(true)
+
+
+func _test_lighting_preferences() -> void:
+	var original: int = world.save_data.lighting_preset
+	var button := world.hud.menus.find_child("LightingButton", true, false) as Button
+	_check(button != null, "title exposes the lighting selector")
+	button.pressed.emit()
+	var selected: int = (original + 1) % 3
+	_check(world.lighting.selected_preset == selected, "menu selects lighting while paused")
+	var saved := ConfigFile.new()
+	_check(saved.load(SAVE_PATH) == OK, "lighting preference is persisted")
+	_check(
+		int(saved.get_value("settings", "lighting_preset", -1)) == selected,
+		"saved lighting matches the selected mode"
+	)
+	await _frames(80)
+	_check(
+		is_equal_approx(world.lighting.key_light.light_energy, ArenaLighting.KEY_ENERGY[selected]),
+		"paused lighting transition reaches the selected preset"
+	)
+	world.start_run()
+	_check(world.lighting.selected_preset == selected, "restart retains the lighting preference")
+	world.pause_run()
+	button = world.hud.menus.find_child("LightingButton", true, false) as Button
+	button.pressed.emit()
+	_check(world.lighting.selected_preset == (selected + 1) % 3, "pause selector is wired")
+	world.lighting.set_boss_active(true)
+	world.hud.lighting_selected.emit(2)
+	_check(
+		world.lighting.active_preset == ArenaLighting.Preset.EMERGENCY,
+		"boss overrides a changed preference"
+	)
+	world.lighting.set_boss_active(false)
+	_check(
+		world.lighting.active_preset == ArenaLighting.Preset.CONTAINMENT,
+		"boss end restores the latest preference"
+	)
+	world.hud.lighting_selected.emit(original)
+	world.show_title()
 
 
 func _test_lifecycle_and_player() -> void:
@@ -800,6 +840,15 @@ func _test_progression() -> void:
 	world.session.player.invulnerability = 1000.0
 	await _frames(2)
 	for expected_wave in range(1, 9):
+		var expected_lighting: int = (
+			ArenaLighting.Preset.EMERGENCY
+			if expected_wave in [4, 8]
+			else world.save_data.lighting_preset
+		)
+		_check(
+			world.lighting.active_preset == expected_lighting,
+			"actual boss waves automatically select emergency lighting"
+		)
 		_check(
 			world.session.waves.wave == expected_wave,
 			"wave advances in sequence: %d" % expected_wave
@@ -824,6 +873,10 @@ func _test_progression() -> void:
 					DamageContext.create(player, player, player.get_damage_team(), &"test")
 				)
 		await _frames(4)
+		_check(
+			world.lighting.active_preset == world.save_data.lighting_preset,
+			"cleared wave restores selected lighting, including final victory"
+		)
 		_check(get_nodes_in_group("projectiles").is_empty(), "wave end clears hostile projectiles")
 		if expected_wave < 8:
 			_check(

@@ -8,9 +8,12 @@ signal restart_requested
 signal menu_requested
 signal upgrade_selected(id: String)
 signal mute_toggled(enabled: bool)
+signal lighting_selected(preset: int)
 
 var _muted: bool = false
 var _sound_button: Button
+var _lighting_button: Button
+var _lighting_preset: int = 0
 @onready var content_center: CenterContainer = $ContentCenter
 
 
@@ -38,6 +41,7 @@ func show_title(best: int) -> void:
 	left.add_child(play)
 	_sound_button = _button("SoundButton", _sound_text(), _toggle_sound)
 	left.add_child(_sound_button)
+	_add_lighting_selector(left)
 	left.add_child(_label("BestScore", "RÉCORD DE CONTENCIÓN   %06d" % best, 14, MUTED))
 	var right := _column("Instructions", _panel("InstructionsPanel", row, Vector2(430, 0)), 10)
 	right.add_child(_label("MissionHeading", "01 / SOBREVIVE A LA NOCHE", 19, CYAN))
@@ -94,8 +98,15 @@ func show_pause() -> void:
 	column.add_child(_button("RestartButton", "REINICIAR OPERACIÓN", restart_requested.emit))
 	_sound_button = _button("SoundButton", _sound_text(), _toggle_sound)
 	column.add_child(_sound_button)
+	_add_lighting_selector(column)
 	column.add_child(_button("MenuButton", "VOLVER AL MENÚ", menu_requested.emit))
 	_focus_when_ready.call_deferred(resume)
+
+
+func set_lighting_preset(preset: int) -> void:
+	_lighting_preset = clampi(preset, 0, 2)
+	if is_instance_valid(_lighting_button):
+		_lighting_button.text = "LUZ: %s  →" % ArenaLighting.LABELS[_lighting_preset]
 
 
 func show_configuration_error(errors: PackedStringArray) -> void:
@@ -193,6 +204,18 @@ func set_muted(enabled: bool) -> void:
 	_muted = enabled
 	if is_instance_valid(_sound_button):
 		_sound_button.text = _sound_text()
+
+
+func _add_lighting_selector(column: VBoxContainer) -> void:
+	_lighting_button = _button("LightingButton", "", _cycle_lighting)
+	column.add_child(_lighting_button)
+	set_lighting_preset(_lighting_preset)
+	column.add_child(_label("LightingHint", "Boss: emergencia automática", 13, MUTED))
+
+
+func _cycle_lighting() -> void:
+	set_lighting_preset((_lighting_preset + 1) % ArenaLighting.LABELS.size())
+	lighting_selected.emit(_lighting_preset)
 
 
 func _clear_content() -> void:

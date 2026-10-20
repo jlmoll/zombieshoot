@@ -1,39 +1,39 @@
 [gd_scene format=3]
 
+[ext_resource type="ArrayMesh" path="res://assets/meshes/barricade_beveled.tres" id="beveled"]
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vuocv"]
 albedo_color = Color(0.25882354, 0.3372549, 0.35686275, 1)
-roughness = 0.85
+roughness = 0.42
 
-[sub_resource type="BoxMesh" id="BoxMesh_xjvyb"]
-size = Vector3(3.5, 1.6, 1.7)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_k2vmm"]
 size = Vector3(3.5, 1.6, 1.7)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xi63h"]
 albedo_color = Color(0.32156864, 0.41960785, 0.41960785, 1)
-roughness = 0.85
+roughness = 0.42
 
 [sub_resource type="BoxMesh" id="BoxMesh_iwnlb"]
 size = Vector3(3.15, 0.06, 1.36)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vur1g"]
 albedo_color = Color(0.84313726, 0.6509804, 0.32941177, 1)
-roughness = 0.85
+roughness = 0.42
 
 [sub_resource type="BoxMesh" id="BoxMesh_x3v4p"]
 size = Vector3(0.35, 0.05, 1.35)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_h7e4u"]
 albedo_color = Color(0.84313726, 0.6509804, 0.32941177, 1)
-roughness = 0.85
+roughness = 0.42
 
 [sub_resource type="BoxMesh" id="BoxMesh_7164c"]
 size = Vector3(0.35, 0.05, 1.35)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xf7r2"]
 albedo_color = Color(0.84313726, 0.6509804, 0.32941177, 1)
-roughness = 0.85
+roughness = 0.42
 
 [sub_resource type="BoxMesh" id="BoxMesh_co1wb"]
 size = Vector3(0.35, 0.05, 1.35)
@@ -44,7 +44,7 @@ collision_mask = 0
 
 [node name="Block" type="MeshInstance3D" parent="." unique_id=1842823799]
 material_override = SubResource("StandardMaterial3D_vuocv")
-mesh = SubResource("BoxMesh_xjvyb")
+mesh = ExtResource("beveled")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=343033340]
 shape = SubResource("BoxShape3D_k2vmm")
