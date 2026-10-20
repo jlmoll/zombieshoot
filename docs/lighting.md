@@ -7,7 +7,9 @@ los contornos y se mantiene el renderer Compatibility.
 El botón **LUZ** del menú principal y de pausa alterna entre:
 
 1. **Turno nocturno**: modo inicial, base fría y focos ámbar.
-2. **Emergencia**: focos rojos y base fría más tenue.
+2. **Emergencia**: ambiente oscuro con rojo dominante, focos de mayor alcance
+   y franjas de paredes y pilares rojas. Un relleno neutro tenue mantiene legibles
+   las figuras; no conserva el baño azul del modo normal.
 3. **Contención**: luz fría más clara y acentos verdes.
 
 La selección se guarda junto al sonido y al récord. Cualquier oleada cuyo

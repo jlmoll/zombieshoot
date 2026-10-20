@@ -191,6 +191,43 @@ func _test_lighting_preferences() -> void:
 		"boss end restores the latest preference"
 	)
 	world.hud.lighting_selected.emit(original)
+	var structure: GridMap = world.arena.get_node("Structure")
+	var source_library := load("res://assets/maps/arena_structure.tres") as MeshLibrary
+	var strip: StandardMaterial3D
+	var source_strip: StandardMaterial3D
+	for item in structure.mesh_library.get_item_list():
+		var mesh: Mesh = structure.mesh_library.get_item_mesh(item)
+		for surface in mesh.get_surface_count():
+			var material := mesh.surface_get_material(surface) as StandardMaterial3D
+			if material != null and material.emission_enabled:
+				strip = material
+				source_strip = source_library.get_item_mesh(item).surface_get_material(surface)
+				break
+		if strip != null:
+			break
+	_check(strip != null and source_strip != null, "map has an emissive perimeter")
+	if strip != null and source_strip != null:
+		var source_color: Color = source_strip.emission
+		world.lighting.select_preset(ArenaLighting.Preset.EMERGENCY, false)
+		_check(
+			strip.emission == ArenaLighting.ACCENTS[ArenaLighting.Preset.EMERGENCY],
+			"emergency changes the actual perimeter to red"
+		)
+		_check(
+			source_strip.emission == source_color, "emergency leaves shared map materials intact"
+		)
+		world.lighting.select_preset(original, false)
+		_check(
+			(
+				strip.emission
+				== (
+					ArenaLighting.ACCENTS[ArenaLighting.Preset.EMERGENCY]
+					if original == ArenaLighting.Preset.EMERGENCY
+					else source_color
+				)
+			),
+			"leaving emergency restores the perimeter palette"
+		)
 	world.show_title()
 
 

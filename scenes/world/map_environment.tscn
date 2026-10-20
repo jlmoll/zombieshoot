@@ -4,10 +4,10 @@
 
 [sub_resource type="Environment" id="Environment_rplra"]
 background_mode = 1
-background_color = Color(0.047058824, 0.08235294, 0.1254902, 1)
+background_color = Color(0.04313726, 0.08235294, 0.1254902, 1)
 ambient_light_source = 2
-ambient_light_color = Color(0.5529412, 0.7137255, 0.76862746, 1)
-ambient_light_energy = 0.28
+ambient_light_color = Color(0.44313726, 0.5529412, 0.6627451, 1)
+ambient_light_energy = 0.14
 tonemap_mode = 2
 
 [node name="Environment" type="Node3D" unique_id=1995143645]
@@ -18,8 +18,8 @@ environment = SubResource("Environment_rplra")
 
 [node name="KeyLight" type="DirectionalLight3D" parent="." unique_id=1406356730]
 transform = Transform3D(0.90630776, 0.34618863, -0.24240388, 0, 0.57357645, 0.81915206, 0.42261827, -0.74240386, 0.5198368, 0, 0, 0)
-light_color = Color(0.76862746, 0.8627451, 0.8980392, 1)
-light_energy = 1.05
+light_color = Color(0.7254902, 0.8352941, 0.92941177, 1)
+light_energy = 0.45
 shadow_enabled = true
 shadow_blur = 1.5
 directional_shadow_max_distance = 70.0
@@ -27,4 +27,4 @@ directional_shadow_max_distance = 70.0
 [node name="FillLight" type="DirectionalLight3D" parent="." unique_id=1723495518]
 transform = Transform3D(-0.81915206, -0.32898995, 0.46984634, 0, 0.81915206, 0.57357645, -0.57357645, 0.46984634, -0.6710101, 0, 0, 0)
 light_color = Color(0.30588236, 0.68235296, 0.6509804, 1)
-light_energy = 0.16
+light_energy = 0.08
