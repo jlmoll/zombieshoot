@@ -61,7 +61,9 @@ func update_stats(data: Dictionary) -> void:
 		if reloading
 		else "%02d / %02d" % [int(data.get("ammo", 0)), int(data.get("magazine", 0))]
 	)
-	ammo_label.add_theme_font_size_override("font_size", 20 if reloading else 26)
+	if bool(data.get("melee", false)):
+		ammo_label.text = "CUERPO A CUERPO"
+	ammo_label.add_theme_font_size_override("font_size", 20 if reloading or bool(data.get("melee", false)) else 26)
 	ammo_label.modulate = AMBER if reloading or int(data.get("ammo", 0)) == 0 else WHITE
 	weapon_label.text = str(data.get("weapon", "PISTOLA")).to_upper()
 	var grenades: int = int(data.get("grenades", 0))
@@ -81,3 +83,4 @@ func update_stats(data: Dictionary) -> void:
 	var seconds: int = int(data.get("time", 0))
 	time_label.text = "TIEMPO  %02d:%02d" % [seconds / 60, seconds % 60]
 	objective_label.text = str(data.get("objective", "ELIMINA LA HORDA"))
+

@@ -81,3 +81,8 @@ godot --headless --path . --fixed-fps 60 --script tests/integration.gd
 ```
 
 Las pruebas cubren armas sin jugador, transformaciones de la boca, configuración por instancia, aislamiento de munición y perks, recarga cancelada, bloqueo de cadencia al cambiar, reinicio, presentación del personaje y las ocho oleadas.
+
+## Motosierra
+
+La cuarta arma, seleccionable con 4, Q, rueda o mando, usa chainsaw.tscn y una variante de Weapon. Mantener ataque corta cada 0,1 s: 16 puntos por contacto en un volumen frontal de 1,35 m y 0,65 m de ancho. Afecta a varios enemigos cercanos, respeta paredes y equipos y conserva la atribución de bajas. No consume munición ni recarga; las mejoras de daño y cadencia sí se aplican. El HUD indica CUERPO A CUERPO.
+

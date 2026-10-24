@@ -46,7 +46,7 @@ try {
     $suites = @(
         'actors/health_component', 'actors/health', 'actors/cursor_projection',
         'perks/perks', 'combat/projectiles', 'rewards/run_rewards', 'waves/run_wave_tests',
-        'weapons/weapons', 'input/input_profiles', 'enemies/enemies',
+        'weapons/weapons', 'weapons/chainsaw', 'input/input_profiles', 'enemies/enemies',
         'enemies/enemy_animation', 'enemies/enemy_model_fidelity',
         'player/player_presentation', 'player/player_model_fidelity', 'integration'
     )
@@ -58,3 +58,4 @@ try {
 } finally {
     $env:APPDATA = $previousAppData
 }
+

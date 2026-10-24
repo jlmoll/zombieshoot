@@ -1,0 +1,22 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/weapons/weapon.tscn" id="base"]
+[ext_resource type="Script" path="res://scripts/weapons/chainsaw.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/models/chainsaw_model.tscn" id="model"]
+
+[node name="Chainsaw" instance=ExtResource("base")]
+script = ExtResource("script")
+display_name = "MOTOSIERRA"
+weapon_id = &"chainsaw"
+damage = 16.0
+fire_interval = 0.1
+shot_sound = "chainsaw"
+recoil_amount = 0.018
+recoil_recovery = 0.45
+flash_duration = 0.0
+camera_trauma = 0.018
+
+[node name="Muzzle" parent="Presentation/RecoilRoot" index="0"]
+position = Vector3(0, 0.035, 0.95)
+
+[node name="Model" parent="Presentation/RecoilRoot/ModelSlot" instance=ExtResource("model")]

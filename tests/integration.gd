@@ -240,9 +240,9 @@ func _test_lifecycle_and_player() -> void:
 	_check(
 		(
 			world.session.player.health == 100.0
-			and world.session.player.weapon_controller.weapons.size() == 3
+			and world.session.player.weapon_controller.weapons.size() == 4
 		),
-		"fresh survivor has full health and three weapons"
+		"fresh survivor has full health and four weapons"
 	)
 	# Exercise the real input dispatch, including events sent by embedded windows.
 	var key: InputEventKey = InputEventKey.new()

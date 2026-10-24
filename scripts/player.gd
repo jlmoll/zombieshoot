@@ -274,7 +274,7 @@ func _on_input_command(command: StringName) -> void:
 			weapon_controller.cycle_weapon()
 		&"previous_weapon":
 			weapon_controller.cycle_weapon(-1)
-		&"weapon_1", &"weapon_2", &"weapon_3":
+		&"weapon_1", &"weapon_2", &"weapon_3", &"weapon_4":
 			select_weapon(int(str(command).trim_prefix("weapon_")) - 1)
 
 

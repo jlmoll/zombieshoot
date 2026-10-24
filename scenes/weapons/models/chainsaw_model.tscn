@@ -1,0 +1,133 @@
+[gd_scene load_steps=10 format=3]
+
+[sub_resource type="StandardMaterial3D" id="Orange"]
+albedo_color = Color(0.95, 0.27, 0.035, 1)
+roughness = 0.65
+[sub_resource type="StandardMaterial3D" id="Dark"]
+albedo_color = Color(0.065, 0.075, 0.085, 1)
+[sub_resource type="StandardMaterial3D" id="Steel"]
+albedo_color = Color(0.65, 0.7, 0.72, 1)
+metallic = 0.75
+roughness = 0.3
+[sub_resource type="BoxMesh" id="Engine"]
+material = SubResource("Orange")
+size = Vector3(0.26, 0.23, 0.32)
+[sub_resource type="BoxMesh" id="Blade"]
+material = SubResource("Steel")
+size = Vector3(0.055, 0.15, 0.65)
+[sub_resource type="BoxMesh" id="Chain"]
+material = SubResource("Dark")
+size = Vector3(0.065, 0.19, 0.69)
+[sub_resource type="BoxMesh" id="Tooth"]
+material = SubResource("Steel")
+size = Vector3(0.08, 0.04, 0.035)
+[sub_resource type="BoxMesh" id="Handle"]
+material = SubResource("Dark")
+size = Vector3(0.055, 0.25, 0.055)
+[sub_resource type="BoxMesh" id="Grip"]
+material = SubResource("Dark")
+size = Vector3(0.32, 0.055, 0.055)
+
+[node name="ChainsawModel" type="Node3D"]
+[node name="Engine" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.015, 0.14)
+mesh = SubResource("Engine")
+[node name="Chain" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.035, 0.61)
+mesh = SubResource("Chain")
+[node name="GuideBar" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.035, 0.61)
+mesh = SubResource("Blade")
+[node name="HandleLeft" type="MeshInstance3D" parent="."]
+position = Vector3(-0.16, 0.09, 0.2)
+mesh = SubResource("Handle")
+[node name="HandleRight" type="MeshInstance3D" parent="."]
+position = Vector3(0.16, 0.09, 0.2)
+mesh = SubResource("Handle")
+[node name="FrontGrip" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.215, 0.2)
+mesh = SubResource("Grip")
+[node name="RearGrip" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.04, -0.08)
+rotation = Vector3(1.5708, 0, 0)
+mesh = SubResource("Handle")
+
+[node name="Tooth-1_0" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.070, 0.320)
+mesh = SubResource("Tooth")
+
+[node name="Tooth-1_1" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.070, 0.385)
+mesh = SubResource("Tooth")
+
+[node name="Tooth-1_2" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.070, 0.450)
+mesh = SubResource("Tooth")
+
+[node name="Tooth-1_3" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.070, 0.515)
+mesh = SubResource("Tooth")
+
+[node name="Tooth-1_4" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.070, 0.580)
+mesh = SubResource("Tooth")
+
+[node name="Tooth-1_5" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.070, 0.645)
+mesh = SubResource("Tooth")
+
+[node name="Tooth-1_6" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.070, 0.710)
+mesh = SubResource("Tooth")
+
+[node name="Tooth-1_7" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.070, 0.775)
+mesh = SubResource("Tooth")
+
+[node name="Tooth-1_8" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.070, 0.840)
+mesh = SubResource("Tooth")
+
+[node name="Tooth-1_9" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.070, 0.905)
+mesh = SubResource("Tooth")
+
+[node name="Tooth1_0" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.140, 0.320)
+mesh = SubResource("Tooth")
+
+[node name="Tooth1_1" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.140, 0.385)
+mesh = SubResource("Tooth")
+
+[node name="Tooth1_2" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.140, 0.450)
+mesh = SubResource("Tooth")
+
+[node name="Tooth1_3" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.140, 0.515)
+mesh = SubResource("Tooth")
+
+[node name="Tooth1_4" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.140, 0.580)
+mesh = SubResource("Tooth")
+
+[node name="Tooth1_5" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.140, 0.645)
+mesh = SubResource("Tooth")
+
+[node name="Tooth1_6" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.140, 0.710)
+mesh = SubResource("Tooth")
+
+[node name="Tooth1_7" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.140, 0.775)
+mesh = SubResource("Tooth")
+
+[node name="Tooth1_8" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.140, 0.840)
+mesh = SubResource("Tooth")
+
+[node name="Tooth1_9" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.140, 0.905)
+mesh = SubResource("Tooth")

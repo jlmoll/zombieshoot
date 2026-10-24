@@ -1,6 +1,6 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://baiccn11tlmd6"]
 
-[ext_resource type="Script" path="res://scripts/presentation/arena_lighting.gd" id="1_lighting"]
+[ext_resource type="Script" uid="uid://bc2l05lf2p2r1" path="res://scripts/presentation/arena_lighting.gd" id="1_lighting"]
 
 [sub_resource type="Environment" id="Environment_rplra"]
 background_mode = 1

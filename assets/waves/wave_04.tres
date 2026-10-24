@@ -1,8 +1,7 @@
-[gd_resource type="Resource" script_class="WaveDefinition" load_steps=6 format=3]
+[gd_resource type="Resource" script_class="WaveDefinition" format=3 uid="uid://cph4awbk52f25"]
 
-[ext_resource type="Script" path="res://scripts/waves/wave_definition.gd" id="wave"]
-
-[ext_resource type="Script" path="res://scripts/waves/wave_spawn_rule.gd" id="rule"]
+[ext_resource type="Script" uid="uid://bvi37crm0o2fy" path="res://scripts/waves/wave_spawn_rule.gd" id="rule"]
+[ext_resource type="Script" uid="uid://cvk0088sdm2k7" path="res://scripts/waves/wave_definition.gd" id="wave"]
 
 [sub_resource type="Resource" id="runner"]
 script = ExtResource("rule")
@@ -22,7 +21,6 @@ every_nth_spawn = 9
 [resource]
 script = ExtResource("wave")
 enemy_count = 29
-spawn_interval = 0.540
+spawn_interval = 0.54
 composition = Array[ExtResource("rule")]([SubResource("runner"), SubResource("spitter"), SubResource("brute")])
 boss_kind = "boss"
-

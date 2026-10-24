@@ -22,6 +22,7 @@ const INTENTS: Array[StringName] = [
 	&"weapon_1",
 	&"weapon_2",
 	&"weapon_3",
+	&"weapon_4",
 ]
 const COMMANDS: Array[StringName] = [
 	&"dash",
@@ -32,6 +33,7 @@ const COMMANDS: Array[StringName] = [
 	&"weapon_1",
 	&"weapon_2",
 	&"weapon_3",
+	&"weapon_4",
 ]
 @export_range(1, 2) var player_slot: int = 1
 @export_range(-2, 15) var gamepad_device: int = -2

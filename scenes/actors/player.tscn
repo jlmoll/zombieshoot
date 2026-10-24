@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
 [ext_resource type="Script" path="res://scripts/actors/player_visuals.gd" id="2_visuals"]
@@ -11,6 +11,8 @@
 
 [ext_resource type="Script" path="res://scripts/input/player_input.gd" id="input"]
 [ext_resource type="PackedScene" path="res://scenes/components/health_component.tscn" id="health"]
+
+[ext_resource type="PackedScene" path="res://scenes/weapons/chainsaw.tscn" id="chainsaw"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
 radius = 0.33
@@ -46,3 +48,6 @@ script = ExtResource("controller")
 
 [node name="PlayerInput" type="Node" parent="."]
 script = ExtResource("input")
+
+[node name="Chainsaw" parent="WeaponController" instance=ExtResource("chainsaw")]
+
